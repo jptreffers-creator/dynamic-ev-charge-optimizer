@@ -20,7 +20,6 @@ may_refresh = car_adapters.may_refresh
 parse_last_fetch = car_adapters.parse_last_fetch
 read_soc = car_adapters.read_soc
 should_refresh = car_adapters.should_refresh
-suggest_entities = car_adapters.suggest_entities
 
 CET = timezone(timedelta(hours=1))
 NOW = datetime(2026, 11, 7, 12, 0, tzinfo=CET)
@@ -118,21 +117,6 @@ class TestShouldRefresh(unittest.TestCase):
 
     def test_missing_refresh_entity_never_polls(self):
         self.assertFalse(self.base(has_refresh_entity=False))
-
-
-class TestEntitySuggestions(unittest.TestCase):
-    def test_hinted_entities_come_first(self):
-        candidates = [
-            "sensor.car_odometer",
-            "sensor.car_battery_level",
-            "sensor.car_range",
-        ]
-        ordered = suggest_entities(candidates, ("battery_level",))
-        self.assertEqual(ordered[0], "sensor.car_battery_level")
-        self.assertEqual(len(ordered), 3)
-
-    def test_without_hints_it_just_sorts(self):
-        self.assertEqual(suggest_entities(["b", "a"], ()), ["a", "b"])
 
 
 if __name__ == "__main__":

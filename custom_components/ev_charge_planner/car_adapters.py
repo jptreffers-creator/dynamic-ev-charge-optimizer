@@ -127,14 +127,3 @@ def should_refresh(
         and is_stale(last_fetch, now, stale_hours)
         and may_refresh(last_attempt, now, min_interval_minutes)
     )
-
-
-def suggest_entities(
-    candidates: list[str], hints: tuple[str, ...]
-) -> list[str]:
-    """Order candidate entity ids so the likely ones surface first in the picker."""
-    if not hints:
-        return sorted(candidates)
-    matching = [e for e in candidates if any(h in e for h in hints)]
-    rest = [e for e in candidates if e not in matching]
-    return sorted(matching) + sorted(rest)
