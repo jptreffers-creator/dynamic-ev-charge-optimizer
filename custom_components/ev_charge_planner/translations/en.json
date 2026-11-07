@@ -1,0 +1,132 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Electricity prices",
+        "description": "Pick the integration that supplies your prices, and the sensor that carries the upcoming ones. The planner needs future prices, not just the current one — usually that is the 'average price' sensor, which keeps the whole day in an attribute.",
+        "data": {
+          "price_preset": "Price integration",
+          "price_entity": "Price sensor"
+        }
+      },
+      "price_keys": {
+        "title": "Where the prices live",
+        "description": "Name the attribute holding the list of upcoming prices, and the keys inside each entry. You can look these up under Developer tools → States by selecting the sensor and reading its attributes.",
+        "data": {
+          "price_attribute": "Attribute name",
+          "price_time_key": "Key holding the start time",
+          "price_value_key": "Key holding the price"
+        }
+      },
+      "charger": {
+        "title": "Charger",
+        "description": "The switch is the one thing that is required: it is what gets turned on and off at the planned moments. The two sensors are optional and only improve the measured charging speed.",
+        "data": {
+          "charger_switch": "Charging switch",
+          "charger_power_sensor": "Power sensor (optional)",
+          "session_energy_sensor": "Session energy sensor (optional)"
+        }
+      },
+      "car": {
+        "title": "Car",
+        "description": "Linking a car is optional. Without one you simply tell the planner how many kWh you want; with one it works that out from the charge level.",
+        "data": {
+          "car_preset": "Car integration"
+        }
+      },
+      "car_details": {
+        "title": "Car details",
+        "description": "The charge level is read passively. If a refresh button is set, it is pressed at most once when you open the planner page and only when the reading is older than the age below — never on a timer, because some cars wake their modem to answer and drain their 12V battery.",
+        "data": {
+          "car_soc_entity": "Charge level sensor",
+          "car_refresh_button": "Refresh button (optional)",
+          "car_last_fetch_entity": "Last updated sensor (optional)",
+          "car_stale_hours": "Consider the reading stale after"
+        }
+      },
+      "defaults": {
+        "title": "Defaults",
+        "description": "Starting values. All of these stay adjustable afterwards, and the charging speed can be replaced later by the speed actually measured.",
+        "data": {
+          "charge_power_kw": "Charging power",
+          "battery_capacity_kwh": "Car battery capacity",
+          "target_soc": "Target charge level",
+          "deadline_time": "Ready by"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "That charging switch is already planned by another entry."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Electricity prices",
+        "description": "Change the price source. Leaving it as it is and clicking through gets you to the other steps.",
+        "data": {
+          "price_preset": "Price integration",
+          "price_entity": "Price sensor"
+        }
+      },
+      "price_keys": {
+        "title": "Where the prices live",
+        "data": {
+          "price_attribute": "Attribute name",
+          "price_time_key": "Key holding the start time",
+          "price_value_key": "Key holding the price"
+        }
+      },
+      "charger": {
+        "title": "Charger",
+        "data": {
+          "charger_switch": "Charging switch",
+          "charger_power_sensor": "Power sensor (optional)",
+          "session_energy_sensor": "Session energy sensor (optional)"
+        }
+      },
+      "car": {
+        "title": "Car",
+        "data": {
+          "car_preset": "Car integration"
+        }
+      },
+      "car_details": {
+        "title": "Car details",
+        "data": {
+          "car_soc_entity": "Charge level sensor",
+          "car_refresh_button": "Refresh button (optional)",
+          "car_last_fetch_entity": "Last updated sensor (optional)",
+          "car_stale_hours": "Consider the reading stale after"
+        }
+      },
+      "defaults": {
+        "title": "Defaults",
+        "data": {
+          "charge_power_kw": "Charging power",
+          "battery_capacity_kwh": "Car battery capacity",
+          "target_soc": "Target charge level",
+          "deadline_time": "Ready by"
+        }
+      }
+    }
+  },
+  "services": {
+    "apply_suggestion": {
+      "name": "Start charging",
+      "description": "Work out the cheapest moments before the deadline and commit them as the schedule."
+    },
+    "stop": {
+      "name": "Stop",
+      "description": "Clear the schedule and switch the charger off."
+    },
+    "refresh_car": {
+      "name": "Refresh car",
+      "description": "Ask the car for a fresh charge level, but only if the reading is stale and the rate limit allows it. Intended to be called when a dashboard opens, never on a schedule."
+    },
+    "adopt_measured_power": {
+      "name": "Adopt measured charging speed",
+      "description": "Replace the configured charging power with the speed measured over recent sessions."
+    }
+  }
+}

@@ -1,0 +1,7 @@
+# Normalise line endings so a contributor on another platform does not produce a
+# diff of every line in a file they barely touched.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary

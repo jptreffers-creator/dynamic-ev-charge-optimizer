@@ -1,0 +1,132 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Stroomprijzen",
+        "description": "Kies de integratie die je prijzen levert, en de sensor met de komende prijzen erin. De planner heeft toekomstige prijzen nodig, niet alleen de prijs van nu — meestal is dat de sensor met de gemiddelde prijs, want die houdt de hele dag in een attribuut.",
+        "data": {
+          "price_preset": "Prijsintegratie",
+          "price_entity": "Prijssensor"
+        }
+      },
+      "price_keys": {
+        "title": "Waar de prijzen staan",
+        "description": "Geef het attribuut op met de lijst komende prijzen, en de sleutels binnen elk item. Je vindt ze via Ontwikkelhulpmiddelen → Statussen: kies de sensor en lees zijn attributen.",
+        "data": {
+          "price_attribute": "Naam van het attribuut",
+          "price_time_key": "Sleutel met de starttijd",
+          "price_value_key": "Sleutel met de prijs"
+        }
+      },
+      "charger": {
+        "title": "Laadpaal",
+        "description": "Alleen de schakelaar is verplicht: die wordt op de geplande momenten aan- en uitgezet. De twee sensoren zijn optioneel en maken alleen de gemeten laadsnelheid nauwkeuriger.",
+        "data": {
+          "charger_switch": "Laadschakelaar",
+          "charger_power_sensor": "Vermogenssensor (optioneel)",
+          "session_energy_sensor": "Sessie-energiesensor (optioneel)"
+        }
+      },
+      "car": {
+        "title": "Auto",
+        "description": "Een auto koppelen is optioneel. Zonder auto geef je zelf op hoeveel kWh je wilt laden; mét auto rekent de planner dat uit het accuniveau.",
+        "data": {
+          "car_preset": "Auto-integratie"
+        }
+      },
+      "car_details": {
+        "title": "Gegevens van de auto",
+        "description": "Het accuniveau wordt passief uitgelezen. Staat er een verversknop ingesteld, dan wordt die hoogstens één keer ingedrukt bij het openen van de plannerpagina, en alleen als de meting ouder is dan hieronder staat — nooit op een timer, want sommige auto's wekken hun modem om te antwoorden en lopen zo leeg op hun 12V-accu.",
+        "data": {
+          "car_soc_entity": "Accuniveausensor",
+          "car_refresh_button": "Verversknop (optioneel)",
+          "car_last_fetch_entity": "Sensor met laatst bijgewerkt (optioneel)",
+          "car_stale_hours": "Meting als verouderd beschouwen na"
+        }
+      },
+      "defaults": {
+        "title": "Standaardwaarden",
+        "description": "Beginwaarden. Je kunt ze daarna allemaal nog aanpassen, en de laadsnelheid kan later worden vervangen door de werkelijk gemeten snelheid.",
+        "data": {
+          "charge_power_kw": "Laadvermogen",
+          "battery_capacity_kwh": "Accucapaciteit auto",
+          "target_soc": "Gewenst accuniveau",
+          "deadline_time": "Klaar om"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Die laadschakelaar wordt al door een andere planner aangestuurd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Stroomprijzen",
+        "description": "Pas de prijsbron aan. Laat je alles staan en klik je door, dan kom je bij de volgende stappen.",
+        "data": {
+          "price_preset": "Prijsintegratie",
+          "price_entity": "Prijssensor"
+        }
+      },
+      "price_keys": {
+        "title": "Waar de prijzen staan",
+        "data": {
+          "price_attribute": "Naam van het attribuut",
+          "price_time_key": "Sleutel met de starttijd",
+          "price_value_key": "Sleutel met de prijs"
+        }
+      },
+      "charger": {
+        "title": "Laadpaal",
+        "data": {
+          "charger_switch": "Laadschakelaar",
+          "charger_power_sensor": "Vermogenssensor (optioneel)",
+          "session_energy_sensor": "Sessie-energiesensor (optioneel)"
+        }
+      },
+      "car": {
+        "title": "Auto",
+        "data": {
+          "car_preset": "Auto-integratie"
+        }
+      },
+      "car_details": {
+        "title": "Gegevens van de auto",
+        "data": {
+          "car_soc_entity": "Accuniveausensor",
+          "car_refresh_button": "Verversknop (optioneel)",
+          "car_last_fetch_entity": "Sensor met laatst bijgewerkt (optioneel)",
+          "car_stale_hours": "Meting als verouderd beschouwen na"
+        }
+      },
+      "defaults": {
+        "title": "Standaardwaarden",
+        "data": {
+          "charge_power_kw": "Laadvermogen",
+          "battery_capacity_kwh": "Accucapaciteit auto",
+          "target_soc": "Gewenst accuniveau",
+          "deadline_time": "Klaar om"
+        }
+      }
+    }
+  },
+  "services": {
+    "apply_suggestion": {
+      "name": "Start laden",
+      "description": "Berekent de goedkoopste momenten voor de deadline en legt die vast als schema."
+    },
+    "stop": {
+      "name": "Stop",
+      "description": "Wist het schema en zet de laadpaal uit."
+    },
+    "refresh_car": {
+      "name": "Auto verversen",
+      "description": "Vraagt de auto om een vers accuniveau, maar alleen als de meting verouderd is en de limiet het toestaat. Bedoeld om aangeroepen te worden bij het openen van een dashboard, nooit periodiek."
+    },
+    "adopt_measured_power": {
+      "name": "Gemeten laadsnelheid overnemen",
+      "description": "Vervangt het ingestelde laadvermogen door de snelheid die over recente sessies is gemeten."
+    }
+  }
+}
