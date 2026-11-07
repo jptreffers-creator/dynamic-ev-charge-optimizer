@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import logging
+from pathlib import Path
+
 import voluptuous as vol
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import config_validation as cv
+from homeassistant.loader import async_get_integration
 
 from .const import (
     DOMAIN,
@@ -28,8 +34,33 @@ PLATFORMS: list[Platform] = [
 
 SERVICE_SCHEMA = vol.Schema({vol.Optional("entry_id"): cv.string})
 
+_LOGGER = logging.getLogger(__name__)
+CARD_PATH = f"/{DOMAIN}/ev-charge-planner-card.js"
+FRONTEND_FLAG = f"{DOMAIN}_frontend_registered"
+
+
+async def _async_register_card(hass: HomeAssistant) -> None:
+    """Serve and register the card ourselves.
+
+    Shipping the card with the integration means one install instead of two, and the
+    version in the URL retires it from browser caches on every upgrade -- which, done
+    by hand, cost an afternoon of stale builds.
+    """
+    if hass.data.get(FRONTEND_FLAG):
+        return
+    hass.data[FRONTEND_FLAG] = True
+
+    source = Path(__file__).parent / "frontend" / "ev-charge-planner-card.js"
+    await hass.http.async_register_static_paths(
+        [StaticPathConfig(CARD_PATH, str(source), cache_headers=False)]
+    )
+    integration = await async_get_integration(hass, DOMAIN)
+    add_extra_js_url(hass, f"{CARD_PATH}?v={integration.version}")
+    _LOGGER.debug("Registered planner card at %s", CARD_PATH)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    await _async_register_card(hass)
     coordinator = EvChargePlannerCoordinator(hass, entry)
     await coordinator.async_load()
     await coordinator.async_config_entry_first_refresh()

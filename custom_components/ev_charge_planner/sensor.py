@@ -114,6 +114,9 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
         name="Prices known until",
         device_class=SensorDeviceClass.TIMESTAMP,
         value=lambda c, p: p.horizon_end if p and p.horizon_end else None,
+        # Carries the parsed price list so the card can draw its graph without
+        # knowing which price integration supplied it.
+        attributes=lambda p: {},
     ),
     PlannerSensorDescription(
         key="measured_charge_power",
@@ -159,7 +162,14 @@ class PlannerSensor(EvChargePlannerEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any] | None:
         if self.entity_description.attributes is None:
             return None
-        extra = self.entity_description.attributes(self.plan)
         if self._key == "measured_charge_power":
-            extra = {"sessions": list(self.coordinator.measured_sessions)}
-        return extra
+            return {"sessions": list(self.coordinator.measured_sessions)}
+        if self._key == "prices_known_until":
+            return {
+                "slot_minutes": self.plan.slot_minutes if self.plan else None,
+                "prices": [
+                    {"start": slot.start.isoformat(), "price": slot.price}
+                    for slot in self.coordinator.slots
+                ],
+            }
+        return self.entity_description.attributes(self.plan)

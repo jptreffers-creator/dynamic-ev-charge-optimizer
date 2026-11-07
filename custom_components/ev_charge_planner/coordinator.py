@@ -80,6 +80,9 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
         self.entry = entry
         self._store: Store = Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}.{entry.entry_id}")
         self.schedule: list[tuple[datetime, datetime]] = []
+        #: Last parsed price list, kept so the card can draw the graph from whatever
+        #: source was configured instead of knowing about ENTSO-e specifically.
+        self.slots: list = []
         self.settings: dict[str, Any] = {}
         self.measured_sessions: list[float] = []
         self.last_car_refresh: datetime | None = None
@@ -194,6 +197,7 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
     async def _async_update_data(self) -> Plan:
         now = dt_util.now()
         slots = self._read_slots()
+        self.slots = slots
 
         plan = build_plan(
             slots,
