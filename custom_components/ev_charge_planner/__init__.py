@@ -30,6 +30,7 @@ PLATFORMS: list[Platform] = [
     Platform.DATETIME,
     Platform.NUMBER,
     Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 SERVICE_SCHEMA = vol.Schema({vol.Optional("entry_id"): cv.string})

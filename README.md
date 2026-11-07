@@ -94,6 +94,24 @@ there. **Stop** clears the schedule and switches off.
 deliberate — it means you can always charge by hand without the planner fighting you
 for the switch.
 
+### Charging now, whatever the price
+
+**Nu laden** ignores the schedule and the prices and switches the charger on straight
+away. Use it when you need the car charged more than you need it charged cheaply.
+
+It stays on until you turn it off. It does not expire by itself, and that is a choice
+rather than an omission: the obvious expiry would be "stop at the target charge level",
+but the car is polled rarely by design, so during a session that figure barely moves
+and the override would outlive its own promise. One rule that holds beats a clever one
+that does not. While it is on, the card says so.
+
+Turning it off is not the same as stopping. Off hands the decision back to the
+schedule, which may well want to carry on charging; **Stop** clears the schedule and
+switches off.
+
+It is also a switch, `switch.*_charge_immediately`, so an automation or a voice command
+can flip it.
+
 ## About polling your car
 
 Several car integrations wake the vehicle to answer, which drains its 12V battery.
@@ -144,6 +162,7 @@ perfectly normal real-world figure.
 | `sensor.*_prices_known_until` | End of the priced horizon |
 | `binary_sensor.*_charge_now` | Whether now falls inside a scheduled period |
 | `binary_sensor.*_plan_fully_priced` | Off when the plan runs past the priced horizon |
+| `switch.*_charge_immediately` | Charge now, ignoring schedule and prices |
 | `number.*` | Charging power, battery capacity, target level, fixed kWh |
 | `datetime.*_ready_by` | The deadline |
 | `button.*` | Start charging, Stop, adopt measured power, refresh car |

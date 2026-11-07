@@ -19,6 +19,7 @@ from _support import planner  # noqa: E402
 PRUNE_GRACE = planner.PRUNE_GRACE
 Slot = planner.Slot
 build_plan = planner.build_plan
+charger_target = planner.charger_target
 cheapest_indexes = planner.cheapest_indexes
 energy_needed_from_soc = planner.energy_needed_from_soc
 merge_ranges = planner.merge_ranges
@@ -290,6 +291,39 @@ class TestEnergyNeeded(unittest.TestCase):
 
     def test_already_above_target_needs_nothing(self):
         self.assertEqual(energy_needed_from_soc(90, 80, 64), 0.0)
+
+
+class TestChargerTarget(unittest.TestCase):
+    """Who gets to hold the switch, and when nobody does."""
+
+    def test_no_schedule_means_hands_off(self):
+        # Not False. False would switch the charger off, which would make charging
+        # by hand impossible — the bug this None exists to prevent.
+        self.assertIsNone(
+            charger_target(has_schedule=False, charge_now=False, override=False)
+        )
+
+    def test_scheduled_and_inside_a_period(self):
+        self.assertIs(
+            charger_target(has_schedule=True, charge_now=True, override=False), True
+        )
+
+    def test_scheduled_but_between_periods(self):
+        self.assertIs(
+            charger_target(has_schedule=True, charge_now=False, override=False), False
+        )
+
+    def test_override_wins_over_an_empty_schedule(self):
+        self.assertIs(
+            charger_target(has_schedule=False, charge_now=False, override=True), True
+        )
+
+    def test_override_wins_over_a_schedule_that_says_off(self):
+        # The whole point: the schedule has reserved cheap periods and we are not in
+        # one, and the override charges anyway.
+        self.assertIs(
+            charger_target(has_schedule=True, charge_now=False, override=True), True
+        )
 
 
 if __name__ == "__main__":

@@ -308,3 +308,20 @@ def energy_needed_from_soc(
     if current_soc is None:
         return 0.0
     return round(max(0.0, (target_soc - current_soc) / 100 * capacity_kwh), 2)
+
+
+def charger_target(
+    *, has_schedule: bool, charge_now: bool, override: bool
+) -> bool | None:
+    """What the charger should be doing, or None to leave it alone.
+
+    Three answers, and the third is the important one. True and False are
+    instructions; None means the planner has no opinion and must not touch the
+    switch. That is what keeps charging by hand possible, and it is why this is a
+    function rather than an if-statement buried in the coordinator.
+    """
+    if override:
+        return True
+    if not has_schedule:
+        return None
+    return charge_now

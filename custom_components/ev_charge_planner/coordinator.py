@@ -51,7 +51,7 @@ from .const import (
     STORAGE_VERSION,
     UPDATE_INTERVAL_SECONDS,
 )
-from .planner import Plan, build_plan, energy_needed_from_soc
+from .planner import Plan, build_plan, charger_target, energy_needed_from_soc
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,6 +92,9 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
         self._session_kwh: float = 0.0
         self._last_sample: datetime | None = None
         self._charger_was_on: bool = False
+        #: Charge now regardless of price. Persisted, because a restart that
+        #: silently stopped an override would look like the charger failing.
+        self.charge_now_override: bool = False
 
     # --- persistence ----------------------------------------------------------
 
@@ -120,6 +123,7 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
                 self.schedule.append((parsed_start, parsed_end))
 
         self.measured_sessions = [float(v) for v in stored.get("measured_sessions") or []]
+        self.charge_now_override = bool(stored.get("charge_now_override"))
         last = stored.get("last_car_refresh")
         self.last_car_refresh = dt_util.parse_datetime(last) if last else None
 
@@ -129,6 +133,7 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
                 "schedule": [[s.isoformat(), e.isoformat()] for s, e in self.schedule],
                 "settings": self.settings,
                 "measured_sessions": self.measured_sessions,
+                "charge_now_override": self.charge_now_override,
                 "last_car_refresh": self.last_car_refresh.isoformat()
                 if self.last_car_refresh
                 else None,
@@ -232,19 +237,24 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
         return plan
 
     async def _apply_to_charger(self, plan: Plan) -> None:
-        """Hands off entirely when nothing is scheduled.
+        """Hands off entirely when nothing is scheduled and nothing is overridden.
 
         That is what makes charging by hand possible: with an empty schedule the
         planner never touches the switch, so it cannot fight the person holding it.
         """
-        if not plan.has_schedule:
+        target = charger_target(
+            has_schedule=plan.has_schedule,
+            charge_now=plan.charge_now,
+            override=self.charge_now_override,
+        )
+        if target is None:
             return
         switch = self.entry.options.get(CONF_CHARGER_SWITCH)
         state = self.hass.states.get(switch) if switch else None
         if state is None or state.state in UNUSABLE:
             return
 
-        wanted = "on" if plan.charge_now else "off"
+        wanted = "on" if target else "off"
         if state.state == wanted:
             return
         # homeassistant.turn_on/off dispatches to whatever domain the entity is in,
@@ -323,11 +333,38 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
         keeps its hands off, so nothing turns the charger back on behind us.
         """
         self.schedule = []
+        self.charge_now_override = False
         await self._async_save()
         switch = self.entry.options.get(CONF_CHARGER_SWITCH)
         if switch:
             await self.hass.services.async_call(
                 "homeassistant", "turn_off", {"entity_id": switch}, blocking=False
+            )
+        await self.async_refresh()
+
+    async def async_set_charge_now(self, value: bool) -> None:
+        """Charge now, price be damned, until this is turned off again.
+
+        It deliberately does not expire on its own. The obvious candidate would be
+        "stop when the target is reached", but the car's charge level is polled
+        rarely by design, so during a session that figure barely moves and the
+        override would outlast its own promise. Better one rule that holds: it stays
+        on until someone turns it off, and the card says so while it is on.
+        """
+        if self.charge_now_override == value:
+            return
+        self.charge_now_override = value
+        await self._async_save()
+        if not value:
+            # Handing control back is not the same as switching off. With a schedule
+            # the next pass decides; without one the planner keeps its hands off and
+            # the charger stays as it is, which is what Stop is for.
+            await self.async_refresh()
+            return
+        switch = self.entry.options.get(CONF_CHARGER_SWITCH)
+        if switch:
+            await self.hass.services.async_call(
+                "homeassistant", "turn_on", {"entity_id": switch}, blocking=False
             )
         await self.async_refresh()
 

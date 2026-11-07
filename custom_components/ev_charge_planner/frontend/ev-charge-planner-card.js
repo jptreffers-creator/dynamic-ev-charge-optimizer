@@ -30,6 +30,7 @@ const SUFFIXES = {
   start: ["button", "start_charging"],
   stop: ["button", "stop"],
   adopt: ["button", "use_measured_charging_power"],
+  now: ["switch", "charge_immediately"],
 };
 
 const fmtTime = (d) =>
@@ -201,6 +202,7 @@ class EvChargePlannerCard extends HTMLElement {
 
         <div class="row">
           <button id="start">Start laden!</button>
+          <button id="now" aria-pressed="false">Nu laden</button>
           <button id="stop">Stop</button>
         </div>
 
@@ -222,7 +224,7 @@ class EvChargePlannerCard extends HTMLElement {
 
     this._el = {};
     for (const id of ["sub","svg","axis","legend","soc","kwh","deadline","hint","start",
-                      "stop","warnbox","planline","timeline","periods","sugline",
+                      "stop","now","warnbox","planline","timeline","periods","sugline",
                       "sugtimeline","slots","live","carnow"]) {
       this._el[id] = this.shadowRoot.getElementById(id);
     }
@@ -236,6 +238,18 @@ class EvChargePlannerCard extends HTMLElement {
           : "Geen voorstel mogelijk. Controleer de laadbehoefte en het tijdstip."
       );
     });
+    this._el.now.addEventListener("click", () => {
+      const id = this._ids?.now;
+      if (!id) return;
+      const on = this._s("now")?.state === "on";
+      this._hass.callService("switch", on ? "turn_off" : "turn_on", { entity_id: id });
+      this._say(
+        on
+          ? "Nu laden uit. Het schema bepaalt weer wanneer er geladen wordt."
+          : "Nu laden aan. De laadpaal gaat aan, ongeacht de prijs."
+      );
+    });
+
     this._el.stop.addEventListener("click", () => {
       this._press("stop");
       this._say("Gestopt en het schema gewist.");
@@ -450,10 +464,26 @@ class EvChargePlannerCard extends HTMLElement {
 
     const over =
       horizonEnd && committed.some((p) => p.end.getTime() > horizonEnd.getTime());
-    this._el.warnbox.innerHTML = over
-      ? `<div class="warn">Prijzen zijn bekend tot ${fmtDayTime(horizonEnd)}. Een deel ` +
-        `van het plan valt daarbuiten en zit nog niet in het totaal.</div>`
-      : "";
+    const nowOn = this._s("now")?.state === "on";
+    // Both the label and aria-pressed change, because an override you cannot tell is
+    // running is an override you forget, and this one costs money every quarter of an hour.
+    this._el.now.textContent = nowOn ? "Nu laden: aan" : "Nu laden";
+    this._el.now.setAttribute("aria-pressed", nowOn ? "true" : "false");
+
+    const warns = [];
+    if (nowOn) {
+      warns.push(
+        `<div class="warn">Nu laden staat aan: er wordt geladen ongeacht de prijs, ` +
+          `tot je het uitzet. Het schema is zolang buiten werking.</div>`
+      );
+    }
+    if (over) {
+      warns.push(
+        `<div class="warn">Prijzen zijn bekend tot ${fmtDayTime(horizonEnd)}. Een deel ` +
+          `van het plan valt daarbuiten en zit nog niet in het totaal.</div>`
+      );
+    }
+    this._el.warnbox.innerHTML = warns.join("");
 
     this._el.periods.innerHTML = committed.length
       ? `<thead><tr><th>Van</th><th>Tot</th><th class="num">kWh</th>
