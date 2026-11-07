@@ -164,6 +164,21 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
         )
 
     @property
+    def car_last_fetch(self) -> datetime | None:
+        return car_adapters.parse_last_fetch(
+            state.state if (state := self._state(CONF_CAR_LAST_FETCH_ENTITY)) else None
+        )
+
+    @property
+    def car_is_stale(self) -> bool:
+        """Whether the reading is old enough that it would be refreshed on sight."""
+        return car_adapters.is_stale(
+            self.car_last_fetch,
+            dt_util.now(),
+            float(self.entry.options.get(CONF_CAR_STALE_HOURS, DEFAULT_STALE_HOURS)),
+        )
+
+    @property
     def energy_needed(self) -> float:
         return energy_needed_from_soc(
             self.car_soc,

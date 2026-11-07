@@ -13,11 +13,13 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfEnergy, UnitOfPower
+from homeassistant.const import PERCENTAGE, UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
+from .car_adapters import PRESET_NONE
+from .const import CONF_CAR_PRESET
 from .coordinator import EvChargePlannerCoordinator
 from .entity import EvChargePlannerEntity
 from .planner import Plan, PlanPart
@@ -140,7 +142,39 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator: EvChargePlannerCoordinator = entry.runtime_data
-    async_add_entities(PlannerSensor(coordinator, desc) for desc in SENSORS)
+    entities: list[SensorEntity] = [PlannerSensor(coordinator, desc) for desc in SENSORS]
+
+    # Republishing the car's charge level under our own name gives the card one entity
+    # to read whatever brand supplied it, and puts the current level next to the target
+    # instead of leaving people to work it out from "kWh still needed".
+    if entry.options.get(CONF_CAR_PRESET, PRESET_NONE) != PRESET_NONE:
+        entities.append(CarChargeLevelSensor(coordinator))
+
+    async_add_entities(entities)
+
+
+class CarChargeLevelSensor(EvChargePlannerEntity, SensorEntity):
+    """The car's charge level as the planner sees it."""
+
+    _attr_name = "Car charge level"
+    _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_native_unit_of_measurement = PERCENTAGE
+
+    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+        super().__init__(coordinator, "car_charge_level")
+
+    @property
+    def native_value(self) -> float | None:
+        return self.coordinator.car_soc
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """How old the reading is matters: the car is polled rarely on purpose."""
+        last = self.coordinator.car_last_fetch
+        return {
+            "last_updated": last.isoformat() if last else None,
+            "stale": self.coordinator.car_is_stale,
+        }
 
 
 class PlannerSensor(EvChargePlannerEntity, SensorEntity):

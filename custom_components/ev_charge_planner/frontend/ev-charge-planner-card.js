@@ -18,6 +18,7 @@ const SUFFIXES = {
   suggestedCost: ["sensor", "suggested_cost"],
   suggestedPeriods: ["sensor", "suggested_periods"],
   energyNeeded: ["sensor", "energy_needed"],
+  carLevel: ["sensor", "car_charge_level"],
   horizon: ["sensor", "prices_known_until"],
   measuredPower: ["sensor", "measured_charging_power"],
   chargeNow: ["binary_sensor", "charge_now"],
@@ -155,6 +156,8 @@ class EvChargePlannerCard extends HTMLElement {
                 font:inherit; font-size:.9rem; }
         input[type=number] { width:5.5em; text-align:right; font-variant-numeric:tabular-nums; }
         .unit { font-size:.85rem; color:var(--secondary-text-color); margin-left:-4px; }
+        .now { font-size:.95rem; font-weight:600; }
+        .now.stale { color:var(--secondary-text-color); font-weight:500; }
         button { border:0; border-radius:6px; padding:9px 16px; font:inherit;
                  font-size:.95rem; cursor:pointer; }
         #start { background:var(--accent-color,#ff9800); color:#000; font-weight:600; }
@@ -182,7 +185,8 @@ class EvChargePlannerCard extends HTMLElement {
         <div class="legend" id="legend"></div>
 
         <div class="row">
-          <label for="soc">Laden tot</label>
+          <span class="now" id="carnow"></span>
+          <label for="soc">laden tot</label>
           <input type="number" id="soc" min="10" max="100" step="5" inputmode="numeric">
           <span class="unit">%</span>
           <label for="kwh">of vast</label>
@@ -219,7 +223,7 @@ class EvChargePlannerCard extends HTMLElement {
     this._el = {};
     for (const id of ["sub","svg","axis","legend","soc","kwh","deadline","hint","start",
                       "stop","warnbox","planline","timeline","periods","sugline",
-                      "sugtimeline","slots","live"]) {
+                      "sugtimeline","slots","live","carnow"]) {
       this._el[id] = this.shadowRoot.getElementById(id);
     }
 
@@ -383,12 +387,36 @@ class EvChargePlannerCard extends HTMLElement {
         .slice(0, 16);
     }
 
+    // With a car linked, lead with where it actually is. "11.2 kWh needed" tells you
+    // nothing about whether that is nearly full or nearly empty.
+    const carState = this._s("carLevel");
+    const car = carState ? num(carState) : null;
+    const stale = carState?.attributes?.stale === true;
+    const lastSeen = carState?.attributes?.last_updated;
+
+    if (car === null) {
+      this._el.carnow.textContent = "";
+      this._el.carnow.classList.remove("stale");
+    } else {
+      this._el.carnow.textContent = `Auto staat op ${car}%,`;
+      this._el.carnow.classList.toggle("stale", stale);
+    }
+
+    const age =
+      stale && lastSeen
+        ? ` Dat cijfer is van ${fmtDayTime(new Date(lastSeen))} — de auto wordt met opzet zelden uitgelezen.`
+        : "";
+
     this._el.hint.textContent =
       override > 0
         ? `Vast op ${override.toFixed(1)} kWh. Het percentage telt niet mee zolang hier een getal staat.`
+        : car !== null && needed
+        ? `Van ${car}% naar ${soc ?? "?"}% is ${needed.toFixed(1)} kWh.${age}`
+        : car !== null
+        ? `De auto staat al op ${car}%, dus er is niets te laden tot ${soc ?? "?"}%.${age}`
         : needed
-        ? `Tot ${soc ?? "?"}% — ${needed.toFixed(1)} kWh nodig volgens de auto.`
-        : `Tot ${soc ?? "?"}% — niets te laden, of het accuniveau is onbekend.`;
+        ? `Tot ${soc ?? "?"}% — ${needed.toFixed(1)} kWh nodig.`
+        : `Tot ${soc ?? "?"}% — accuniveau onbekend, vul anders een vast aantal kWh in.`;
   }
 
   _drawPlan(committed, suggested, horizonEnd) {
