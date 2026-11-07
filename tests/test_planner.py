@@ -12,17 +12,17 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from custom_components.ev_charge_planner.planner import (  # noqa: E402
-    PRUNE_GRACE,
-    Slot,
-    build_plan,
-    cheapest_indexes,
-    energy_needed_from_soc,
-    merge_ranges,
-    slot_minutes_of,
-)
+from _support import planner  # noqa: E402
+
+PRUNE_GRACE = planner.PRUNE_GRACE
+Slot = planner.Slot
+build_plan = planner.build_plan
+cheapest_indexes = planner.cheapest_indexes
+energy_needed_from_soc = planner.energy_needed_from_soc
+merge_ranges = planner.merge_ranges
+slot_minutes_of = planner.slot_minutes_of
 
 CET = timezone(timedelta(hours=1))
 MIDNIGHT = datetime(2026, 10, 29, 0, 0, tzinfo=CET)

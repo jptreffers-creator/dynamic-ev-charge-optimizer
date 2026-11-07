@@ -1,0 +1,29 @@
+apply_suggestion:
+  fields:
+    entry_id:
+      required: false
+      selector:
+        text:
+
+stop:
+  fields:
+    entry_id:
+      required: false
+      selector:
+        text:
+
+refresh_car:
+  # Intended to be called when a dashboard opens. It refuses if the reading is still
+  # fresh or if it ran recently, so calling it repeatedly is harmless.
+  fields:
+    entry_id:
+      required: false
+      selector:
+        text:
+
+adopt_measured_power:
+  fields:
+    entry_id:
+      required: false
+      selector:
+        text:

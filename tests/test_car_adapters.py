@@ -7,20 +7,20 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from custom_components.ev_charge_planner.car_adapters import (  # noqa: E402
-    PRESET_ENTITY,
-    PRESET_NONE,
-    PRESET_TOYOTA,
-    PRESETS,
-    is_stale,
-    may_refresh,
-    parse_last_fetch,
-    read_soc,
-    should_refresh,
-    suggest_entities,
-)
+from _support import car_adapters  # noqa: E402
+
+PRESET_ENTITY = car_adapters.PRESET_ENTITY
+PRESET_NONE = car_adapters.PRESET_NONE
+PRESET_TOYOTA = car_adapters.PRESET_TOYOTA
+PRESETS = car_adapters.PRESETS
+is_stale = car_adapters.is_stale
+may_refresh = car_adapters.may_refresh
+parse_last_fetch = car_adapters.parse_last_fetch
+read_soc = car_adapters.read_soc
+should_refresh = car_adapters.should_refresh
+suggest_entities = car_adapters.suggest_entities
 
 CET = timezone(timedelta(hours=1))
 NOW = datetime(2026, 11, 7, 12, 0, tzinfo=CET)

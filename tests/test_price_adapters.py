@@ -8,16 +8,16 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from custom_components.ev_charge_planner.price_adapters import (  # noqa: E402
-    PRESET_ENTSOE,
-    PRESETS,
-    PriceReadError,
-    parse_timestamp,
-    shape_from_config,
-    slots_from_attribute,
-)
+from _support import price_adapters  # noqa: E402
+
+PRESET_ENTSOE = price_adapters.PRESET_ENTSOE
+PRESETS = price_adapters.PRESETS
+PriceReadError = price_adapters.PriceReadError
+parse_timestamp = price_adapters.parse_timestamp
+shape_from_config = price_adapters.shape_from_config
+slots_from_attribute = price_adapters.slots_from_attribute
 
 SNAPSHOT = Path(__file__).with_name("live_snapshot.json")
 CET = timezone(timedelta(hours=1))
@@ -101,12 +101,12 @@ class TestSlotsFromAttribute(unittest.TestCase):
 
 class TestGenericOverrides(unittest.TestCase):
     def test_generic_keys_are_honoured(self):
-        from custom_components.ev_charge_planner.const import (
-            CONF_PRICE_ATTRIBUTE,
-            CONF_PRICE_PRESET,
-            CONF_PRICE_TIME_KEY,
-            CONF_PRICE_VALUE_KEY,
-        )
+        from _support import const
+
+        CONF_PRICE_ATTRIBUTE = const.CONF_PRICE_ATTRIBUTE
+        CONF_PRICE_PRESET = const.CONF_PRICE_PRESET
+        CONF_PRICE_TIME_KEY = const.CONF_PRICE_TIME_KEY
+        CONF_PRICE_VALUE_KEY = const.CONF_PRICE_VALUE_KEY
 
         shape = shape_from_config(
             {
@@ -121,7 +121,9 @@ class TestGenericOverrides(unittest.TestCase):
         self.assertAlmostEqual(slots[0].price, 0.33)
 
     def test_preset_defaults_fill_the_gaps(self):
-        from custom_components.ev_charge_planner.const import CONF_PRICE_PRESET
+        from _support import const
+
+        CONF_PRICE_PRESET = const.CONF_PRICE_PRESET
 
         shape = shape_from_config({CONF_PRICE_PRESET: PRESET_ENTSOE})
         self.assertEqual(shape.attribute, "prices")

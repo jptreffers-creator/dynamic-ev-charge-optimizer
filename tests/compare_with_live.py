@@ -15,9 +15,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from custom_components.ev_charge_planner.planner import Slot, build_plan  # noqa: E402
+from _support import planner  # noqa: E402
+
+Slot = planner.Slot
+build_plan = planner.build_plan
 
 
 def fmt(periods) -> list[tuple[str, str, int]]:
