@@ -228,8 +228,10 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
         wanted = "on" if plan.charge_now else "off"
         if state.state == wanted:
             return
+        # homeassistant.turn_on/off dispatches to whatever domain the entity is in,
+        # so a charger exposed as something other than a switch still works.
         await self.hass.services.async_call(
-            "switch",
+            "homeassistant",
             f"turn_{wanted}",
             {"entity_id": switch},
             blocking=False,
@@ -306,7 +308,7 @@ class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
         switch = self.entry.options.get(CONF_CHARGER_SWITCH)
         if switch:
             await self.hass.services.async_call(
-                "switch", "turn_off", {"entity_id": switch}, blocking=False
+                "homeassistant", "turn_off", {"entity_id": switch}, blocking=False
             )
         await self.async_refresh()
 
