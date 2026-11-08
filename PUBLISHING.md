@@ -118,9 +118,11 @@ en geen voorwaarde; de integratie werkt zonder. Wat ze vragen:
   - De Marketplace haalt die afbeeldingen elk uur op bij de *laatste release*, dus
     ze moeten in een release zitten voordat ze ergens opduiken. Reken daarnaast op
     cachevertraging: browsers 7 dagen, Cloudflare 24 uur.
-- hassfest en de HACS-actie zijn groen. De workflow slaat nu de `brands`-controle
-  over met `ignore: brands` in `.github/workflows/validate.yml`. Zodra je die
-  `brand/`-map hebt, haal die regel er weer uit en kijk of de controle slaagt.
+- hassfest en de HACS-actie zijn groen. Dat is nu zo, zonder uitzonderingen in de
+  workflow: de HACS-actie accepteert de `brand/`-map in de repo zelf, dus de
+  `brands`-controle slaagt zonder pull request bij `home-assistant/brands`. We
+  hebben dat uitgeprobeerd door `ignore: brands` weer weg te halen, en de run bleef
+  groen.
 
 Daarna een pull request op `hacs/default` waarin je de repo aan het bestand
 `integration` toevoegt. Reken op wachttijd; het is een wachtrij met vrijwilligers.
