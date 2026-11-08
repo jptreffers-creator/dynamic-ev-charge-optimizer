@@ -7,3 +7,5 @@ venv/
 .idea/
 *.egg-info/
 tools/icon-preview.png
+.harness/
+.claude/

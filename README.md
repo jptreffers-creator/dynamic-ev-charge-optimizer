@@ -119,6 +119,22 @@ switches off.
 It is also a switch, `switch.*_charge_immediately`, so an automation or a voice command
 can flip it.
 
+## Language and currency
+
+The card speaks English by default and Dutch where Home Assistant is set to Dutch.
+Any other language falls back to English rather than showing blanks, while dates,
+times and numbers still follow that language's own conventions.
+
+Amounts use the currency from Home Assistant's own setting (*Settings -> System ->
+General*), not a hard-coded euro sign, so a Nord Pool user sees kroner.
+
+Adding a language means adding one block to `STRINGS` at the top of
+`custom_components/ev_charge_planner/frontend/ev-charge-planner-card.js`. Entries
+are plain strings or small functions, so word order stays yours. A partial
+translation is fine: anything you leave out comes through in English. To see the
+result without a Home Assistant to hand, `python tools/make_harness.py` writes a
+standalone page per language.
+
 ## About polling your car
 
 Several car integrations wake the vehicle to answer, which drains its 12V battery.

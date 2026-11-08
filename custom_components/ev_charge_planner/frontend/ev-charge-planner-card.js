@@ -33,18 +33,152 @@ const SUFFIXES = {
   now: ["switch", "charge_immediately"],
 };
 
-const fmtTime = (d) =>
-  d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-const fmtDayTime = (d) =>
-  d.toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
-const eur = (v) =>
-  v === null || v === undefined || isNaN(v) ? "–" : "€" + Number(v).toFixed(2);
-const eurKwh = (v) =>
-  v === null || v === undefined || isNaN(v) ? "–" : "€" + Number(v).toFixed(4);
 const num = (state) => {
   const v = Number(state?.state);
   return isNaN(v) ? null : v;
 };
+
+/* Every word the card can say, English first because that is the fallback for any
+   language we do not have. A bundle is merged over the English one, so a partial
+   translation still renders a complete card. Entries that take values are
+   functions, which leaves word order to the translator instead of forcing every
+   language through English sentence structure. */
+const STRINGS = {
+  en: {
+    title: "Charge planner",
+    chargeTo: "charge to",
+    orFixed: "or fixed",
+    readyBy: "Ready by",
+    btnSchedule: "Charge on schedule",
+    btnNow: "Charge now",
+    btnNowOn: "Charge now: on",
+    btnStop: "Stop",
+    slotsSummary: "Price per period in the plan",
+    notFound: "EV Charge Planner not found. Is the integration set up?",
+    started: (periods, cost) => `Started. Scheduled: ${periods}, ${cost}.`,
+    noProposalPossible:
+      "No proposal is possible. Check how much is needed and the deadline.",
+    nowTurnedOn: "Charge now on. The charger switches on whatever the price.",
+    nowTurnedOff: "Charge now off. The schedule decides when charging happens again.",
+    stopped: "Stopped, and the schedule cleared.",
+    saidTarget: (pct) => `Charging to ${pct} percent.`,
+    saidFixed: (kwh) => `Fixed at ${kwh} kilowatt-hours.`,
+    saidFollowCar: "Following the car's charge level again.",
+    subPrices: (when) => `prices known until ${when}`,
+    subScheduled: (n) => `${n} period${n === 1 ? "" : "s"} scheduled`,
+    subNoSchedule: "no schedule — the charger is yours to use by hand",
+    subCharging: "charging now",
+    chartLabel: (from, to, low, high) =>
+      `Electricity price from ${from} to ${to}. ` +
+      `Lowest ${low}, highest ${high} per kilowatt-hour.`,
+    legendScheduled: "scheduled",
+    legendProposal: "proposal",
+    legendNow: "now",
+    carAt: (pct) => `The car is at ${pct}%,`,
+    readingAge: (when) =>
+      ` That figure is from ${when} — the car is read rarely on purpose.`,
+    hintFixed: (kwh) =>
+      `Fixed at ${kwh} kWh. The percentage is ignored while there is a number here.`,
+    hintFromTo: (car, target, kwh, age) =>
+      `From ${car}% to ${target}% is ${kwh} kWh.${age}`,
+    hintAlready: (car, target, age) =>
+      `The car is already at ${car}%, so there is nothing to add up to ${target}%.${age}`,
+    hintNeeded: (target, kwh) => `To ${target}% — ${kwh} kWh needed.`,
+    hintUnknown: (target) =>
+      `To ${target}% — charge level unknown, enter a fixed number of kWh instead.`,
+    labelScheduled: "Scheduled",
+    labelProposal: "Proposal",
+    planLine: (label, n, kwh, cost, avg) =>
+      `${label}: ${n} period${n === 1 ? "" : "s"} · ${kwh} kWh · ` +
+      `<b>${cost}</b> · ${avg}/kWh average`,
+    nothingScheduled: "Nothing scheduled yet.",
+    switchPoints: "Switch points: ",
+    on: "ON",
+    off: "OFF",
+    noProposal: "No proposal — set how much is needed and a deadline.",
+    proposalPrefix: "Proposal: ",
+    warnNowOn:
+      "Charge now is on: charging continues whatever the price, until you turn it " +
+      "off. The schedule is suspended meanwhile.",
+    warnHorizon: (when) =>
+      `Prices are known until ${when}. Part of the plan falls beyond that and is ` +
+      `not in the total yet.`,
+    thFrom: "From",
+    thTo: "To",
+    thCost: "Cost",
+    thAvgPrice: "Avg. price",
+    thStart: "Start",
+    thPricePerKwh: "Price/kWh",
+  },
+
+  nl: {
+    title: "Laadplanner",
+    chargeTo: "laden tot",
+    orFixed: "of vast",
+    readyBy: "Klaar om",
+    btnSchedule: "Schema laden",
+    btnNow: "Laad nu",
+    btnNowOn: "Laad nu: aan",
+    btnStop: "Stop",
+    slotsSummary: "Prijs per periode in het plan",
+    notFound: "EV Charge Planner niet gevonden. Is de integratie ingesteld?",
+    started: (periods, cost) => `Gestart. Ingepland: ${periods}, ${cost}.`,
+    noProposalPossible:
+      "Geen voorstel mogelijk. Controleer de laadbehoefte en het tijdstip.",
+    nowTurnedOn: "Laad nu aan. De laadpaal gaat aan, ongeacht de prijs.",
+    nowTurnedOff: "Laad nu uit. Het schema bepaalt weer wanneer er geladen wordt.",
+    stopped: "Gestopt en het schema gewist.",
+    saidTarget: (pct) => `Laden tot ${pct} procent.`,
+    saidFixed: (kwh) => `Vast ingesteld op ${kwh} kilowattuur.`,
+    saidFollowCar: "Volgt weer het accuniveau van de auto.",
+    subPrices: (when) => `prijzen bekend tot ${when}`,
+    subScheduled: (n) => `${n} periode${n === 1 ? "" : "s"} ingepland`,
+    subNoSchedule: "geen schema — laadpaal met de hand te bedienen",
+    subCharging: "laadt nu",
+    chartLabel: (from, to, low, high) =>
+      `Stroomprijs van ${from} tot ${to}. ` +
+      `Laagste ${low}, hoogste ${high} per kilowattuur.`,
+    legendScheduled: "ingepland",
+    legendProposal: "voorstel",
+    legendNow: "nu",
+    carAt: (pct) => `Auto staat op ${pct}%,`,
+    readingAge: (when) =>
+      ` Dat cijfer is van ${when} — de auto wordt met opzet zelden uitgelezen.`,
+    hintFixed: (kwh) =>
+      `Vast op ${kwh} kWh. Het percentage telt niet mee zolang hier een getal staat.`,
+    hintFromTo: (car, target, kwh, age) =>
+      `Van ${car}% naar ${target}% is ${kwh} kWh.${age}`,
+    hintAlready: (car, target, age) =>
+      `De auto staat al op ${car}%, dus er is niets te laden tot ${target}%.${age}`,
+    hintNeeded: (target, kwh) => `Tot ${target}% — ${kwh} kWh nodig.`,
+    hintUnknown: (target) =>
+      `Tot ${target}% — accuniveau onbekend, vul anders een vast aantal kWh in.`,
+    labelScheduled: "Ingepland",
+    labelProposal: "Voorstel",
+    planLine: (label, n, kwh, cost, avg) =>
+      `${label}: ${n} periode${n === 1 ? "" : "s"} · ${kwh} kWh · ` +
+      `<b>${cost}</b> · gemiddeld ${avg}/kWh`,
+    nothingScheduled: "Nog niets ingepland.",
+    switchPoints: "Schakelmomenten: ",
+    on: "AAN",
+    off: "UIT",
+    noProposal: "Geen voorstel — stel een laadbehoefte en een tijdstip in.",
+    proposalPrefix: "Voorstel: ",
+    warnNowOn:
+      "Laad nu staat aan: er wordt geladen ongeacht de prijs, tot je het uitzet. " +
+      "Het schema is zolang buiten werking.",
+    warnHorizon: (when) =>
+      `Prijzen zijn bekend tot ${when}. Een deel van het plan valt daarbuiten en ` +
+      `zit nog niet in het totaal.`,
+    thFrom: "Van",
+    thTo: "Tot",
+    thCost: "Kosten",
+    thAvgPrice: "Gem. prijs",
+    thStart: "Start",
+    thPricePerKwh: "Prijs/kWh",
+  },
+};
+
 
 class EvChargePlannerCard extends HTMLElement {
   constructor() {
@@ -60,6 +194,61 @@ class EvChargePlannerCard extends HTMLElement {
 
   getCardSize() {
     return 10;
+  }
+
+  /* ---------- language, dates and money ---------- */
+
+  _lang() {
+    const raw = this._hass?.locale?.language || this._hass?.language || "en";
+    return String(raw).slice(0, 2).toLowerCase();
+  }
+
+  /* English underneath, the chosen language on top, so a partial translation
+     still renders a complete card. */
+  _t() {
+    return { ...STRINGS.en, ...(STRINGS[this._lang()] || {}) };
+  }
+
+  _time(d) {
+    return d.toLocaleTimeString(this._lang(), {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  _dayTime(d) {
+    return d.toLocaleString(this._lang(), {
+      weekday: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  /* The currency comes from Home Assistant's own setting rather than a euro sign
+     baked into the card: a Nord Pool user is billed in kroner, and a card that
+     insists on euros is simply wrong for them. */
+  _money(v, digits) {
+    if (v === null || v === undefined || isNaN(v)) return "–";
+    const currency = this._hass?.config?.currency || "EUR";
+    try {
+      return new Intl.NumberFormat(this._lang(), {
+        style: "currency",
+        currency,
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      }).format(Number(v));
+    } catch (e) {
+      // An unknown currency code makes Intl throw rather than fall back itself.
+      return `${Number(v).toFixed(digits)} ${currency}`;
+    }
+  }
+
+  _cost(v) {
+    return this._money(v, 2);
+  }
+
+  _price(v) {
+    return this._money(v, 4);
   }
 
   connectedCallback() {
@@ -136,6 +325,7 @@ class EvChargePlannerCard extends HTMLElement {
   /* ---------- build ---------- */
 
   _build() {
+    const t = this._t();
     this._built = true;
     this.shadowRoot.innerHTML = `
       <style>
@@ -169,7 +359,13 @@ class EvChargePlannerCard extends HTMLElement {
         .summary b { font-size:1.15rem; }
         .note { color:var(--secondary-text-color); font-size:.8rem; margin:4px 0; }
         .warn { color:var(--error-color,#db4437); font-size:.82rem; margin:6px 0; }
+        /* A table of five columns full of dates is as wide as the language makes
+           it: Norwegian renders "man. kl. 10:30" where Dutch gets "ma 10:30".
+           The wrapper keeps that inside the card instead of stretching the
+           dashboard, and nowrap stops a date breaking across three lines. */
+        .tablewrap { overflow-x:auto; }
         table { width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:.86rem; }
+        td:first-child, td:nth-child(2) { white-space:nowrap; }
         th,td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--divider-color); }
         th { color:var(--secondary-text-color); font-weight:500; }
         td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
@@ -179,7 +375,7 @@ class EvChargePlannerCard extends HTMLElement {
               clip:rect(0 0 0 0); white-space:nowrap; }
       </style>
       <ha-card>
-        <h3>Laadplanner</h3>
+        <h3>${t.title}</h3>
         <div class="sub" id="sub"></div>
         <svg id="svg" role="img"></svg>
         <div class="axis" id="axis"></div>
@@ -187,36 +383,36 @@ class EvChargePlannerCard extends HTMLElement {
 
         <div class="row">
           <span class="now" id="carnow"></span>
-          <label for="soc">laden tot</label>
+          <label for="soc">${t.chargeTo}</label>
           <input type="number" id="soc" min="10" max="100" step="5" inputmode="numeric">
           <span class="unit">%</span>
-          <label for="kwh">of vast</label>
+          <label for="kwh">${t.orFixed}</label>
           <input type="number" id="kwh" min="0" max="200" step="0.5" inputmode="decimal">
           <span class="unit">kWh</span>
         </div>
         <div class="row">
-          <label for="deadline">Klaar om</label>
+          <label for="deadline">${t.readyBy}</label>
           <input type="datetime-local" id="deadline">
         </div>
         <div class="note" id="hint"></div>
 
         <div class="row">
-          <button id="start">Schema laden</button>
-          <button id="now" aria-pressed="false">Laad nu</button>
-          <button id="stop">Stop</button>
+          <button id="start">${t.btnSchedule}</button>
+          <button id="now" aria-pressed="false">${t.btnNow}</button>
+          <button id="stop">${t.btnStop}</button>
         </div>
 
         <div id="warnbox"></div>
         <div class="summary" id="planline"></div>
         <div class="note" id="timeline"></div>
-        <table id="periods"></table>
+        <div class="tablewrap"><table id="periods"></table></div>
 
         <div class="summary" id="sugline"></div>
         <div class="note" id="sugtimeline"></div>
 
         <details>
-          <summary>Prijs per periode in het plan</summary>
-          <table id="slots"></table>
+          <summary>${t.slotsSummary}</summary>
+          <div class="tablewrap"><table id="slots"></table></div>
         </details>
 
         <div class="sr" id="live" aria-live="polite" role="status"></div>
@@ -232,10 +428,11 @@ class EvChargePlannerCard extends HTMLElement {
     this._el.start.addEventListener("click", () => {
       this._press("start");
       const sug = this._s("suggestedPeriods")?.state;
+      const s = this._t();
       this._say(
         sug && sug !== "none"
-          ? `Gestart. Ingepland: ${sug}, ${eur(num(this._s("suggestedCost")))}.`
-          : "Geen voorstel mogelijk. Controleer de laadbehoefte en het tijdstip."
+          ? s.started(sug, this._cost(num(this._s("suggestedCost"))))
+          : s.noProposalPossible
       );
     });
     this._el.now.addEventListener("click", () => {
@@ -243,27 +440,23 @@ class EvChargePlannerCard extends HTMLElement {
       if (!id) return;
       const on = this._s("now")?.state === "on";
       this._hass.callService("switch", on ? "turn_off" : "turn_on", { entity_id: id });
-      this._say(
-        on
-          ? "Laad nu uit. Het schema bepaalt weer wanneer er geladen wordt."
-          : "Laad nu aan. De laadpaal gaat aan, ongeacht de prijs."
-      );
+      this._say(on ? this._t().nowTurnedOff : this._t().nowTurnedOn);
     });
 
     this._el.stop.addEventListener("click", () => {
       this._press("stop");
-      this._say("Gestopt en het schema gewist.");
+      this._say(this._t().stopped);
     });
     this._el.soc.addEventListener("change", (e) => {
       const v = Math.min(100, Math.max(10, Number(e.target.value) || 0));
       this._setNumber("targetSoc", v);
-      this._say(`Laden tot ${v} procent.`);
+      this._say(this._t().saidTarget(v));
     });
     this._el.kwh.addEventListener("change", (e) => {
       const v = Math.max(0, Number(e.target.value) || 0);
       this._setNumber("override", v);
-      this._say(v > 0 ? `Vast ingesteld op ${v} kilowattuur.`
-                      : "Volgt weer het accuniveau van de auto.");
+      const s = this._t();
+      this._say(v > 0 ? s.saidFixed(v) : s.saidFollowCar);
     });
     this._el.deadline.addEventListener("change", (e) => {
       if (!e.target.value || !this._ids?.deadline) return;
@@ -277,10 +470,10 @@ class EvChargePlannerCard extends HTMLElement {
   /* ---------- render ---------- */
 
   _render() {
+    const t = this._t();
     if (!this._built) return;
     if (!this._ids?.horizon || !this._s("horizon")) {
-      this._el.sub.textContent =
-        "EV Charge Planner niet gevonden. Is de integratie ingesteld?";
+      this._el.sub.textContent = t.notFound;
       return;
     }
 
@@ -298,11 +491,11 @@ class EvChargePlannerCard extends HTMLElement {
       ? new Date(this._s("horizon").state)
       : null;
     this._el.sub.textContent =
-      `${kw ?? "?"} kW · prijzen bekend tot ${horizonEnd ? fmtDayTime(horizonEnd) : "?"} · ` +
-      (committed.length
-        ? `${committed.length} periode${committed.length === 1 ? "" : "s"} ingepland`
-        : "geen schema — laadpaal met de hand te bedienen") +
-      (charging ? " · laadt nu" : "");
+      `${kw ?? "?"} kW · ` +
+      t.subPrices(horizonEnd ? this._dayTime(horizonEnd) : "?") +
+      " · " +
+      (committed.length ? t.subScheduled(committed.length) : t.subNoSchedule) +
+      (charging ? " · " + t.subCharging : "");
 
     this._drawChart(prices, committed, suggested, slotMinutes);
     this._drawInputs();
@@ -311,6 +504,7 @@ class EvChargePlannerCard extends HTMLElement {
   }
 
   _drawChart(prices, committed, suggested, slotMinutes) {
+    const t = this._t();
     const n = prices.length;
     if (!n) {
       this._el.svg.innerHTML = "";
@@ -369,22 +563,27 @@ class EvChargePlannerCard extends HTMLElement {
     this._el.svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     this._el.svg.setAttribute(
       "aria-label",
-      `Stroomprijs van ${fmtDayTime(prices[0].t)} tot ${fmtDayTime(prices[n - 1].t)}. ` +
-        `Laagste ${eurKwh(min)}, hoogste ${eurKwh(max)} per kilowattuur.`
+      t.chartLabel(
+        this._dayTime(prices[0].t),
+        this._dayTime(prices[n - 1].t),
+        this._price(min),
+        this._price(max)
+      )
     );
     this._el.svg.innerHTML = parts.join("");
 
     const marks = [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor((3 * n) / 4), n - 1];
     this._el.axis.innerHTML = marks
-      .map((i) => `<span>${fmtDayTime(prices[i].t)}</span>`)
+      .map((i) => `<span>${this._dayTime(prices[i].t)}</span>`)
       .join("");
     this._el.legend.innerHTML =
-      `<span><span class="key" style="background:var(--primary-color)"></span>ingepland</span>` +
-      `<span><span class="key" style="background:var(--accent-color,#ff9800)"></span>voorstel</span>` +
-      `<span><span class="key" style="background:var(--error-color,#db4437)"></span>nu</span>`;
+      `<span><span class="key" style="background:var(--primary-color)"></span>${t.legendScheduled}</span>` +
+      `<span><span class="key" style="background:var(--accent-color,#ff9800)"></span>${t.legendProposal}</span>` +
+      `<span><span class="key" style="background:var(--error-color,#db4437)"></span>${t.legendNow}</span>`;
   }
 
   _drawInputs() {
+    const t = this._t();
     const soc = num(this._s("targetSoc"));
     const override = num(this._s("override"));
     const needed = num(this._s("energyNeeded"));
@@ -412,41 +611,50 @@ class EvChargePlannerCard extends HTMLElement {
       this._el.carnow.textContent = "";
       this._el.carnow.classList.remove("stale");
     } else {
-      this._el.carnow.textContent = `Auto staat op ${car}%,`;
+      this._el.carnow.textContent = t.carAt(car);
       this._el.carnow.classList.toggle("stale", stale);
     }
 
     const age =
       stale && lastSeen
-        ? ` Dat cijfer is van ${fmtDayTime(new Date(lastSeen))} — de auto wordt met opzet zelden uitgelezen.`
+        ? t.readingAge(this._dayTime(new Date(lastSeen)))
         : "";
 
     this._el.hint.textContent =
       override > 0
-        ? `Vast op ${override.toFixed(1)} kWh. Het percentage telt niet mee zolang hier een getal staat.`
+        ? t.hintFixed(override.toFixed(1))
         : car !== null && needed
-        ? `Van ${car}% naar ${soc ?? "?"}% is ${needed.toFixed(1)} kWh.${age}`
+        ? t.hintFromTo(car, soc ?? "?", needed.toFixed(1), age)
         : car !== null
-        ? `De auto staat al op ${car}%, dus er is niets te laden tot ${soc ?? "?"}%.${age}`
+        ? t.hintAlready(car, soc ?? "?", age)
         : needed
-        ? `Tot ${soc ?? "?"}% — ${needed.toFixed(1)} kWh nodig.`
-        : `Tot ${soc ?? "?"}% — accuniveau onbekend, vul anders een vast aantal kWh in.`;
+        ? t.hintNeeded(soc ?? "?", needed.toFixed(1))
+        : t.hintUnknown(soc ?? "?");
   }
 
   _drawPlan(committed, suggested, horizonEnd) {
+    const t = this._t();
     const line = (periods, cost, kwh, avg, label) =>
       periods.length
-        ? `${label}: ${periods.length} periode${periods.length === 1 ? "" : "s"} · ` +
-          `${Number(kwh).toFixed(1)} kWh · <b>${eur(cost)}</b> · gemiddeld ${eurKwh(avg)}/kWh`
+        ? t.planLine(
+            label,
+            periods.length,
+            Number(kwh).toFixed(1),
+            this._cost(cost),
+            this._price(avg)
+          )
         : "";
 
     this._el.planline.innerHTML =
       line(committed, num(this._s("planCost")), num(this._s("planEnergy")),
-           num(this._s("planAvg")), "Ingepland") || "Nog niets ingepland.";
+           num(this._s("planAvg")), t.labelScheduled) || t.nothingScheduled;
     this._el.timeline.textContent = committed.length
-      ? "Schakelmomenten: " +
+      ? t.switchPoints +
         committed
-          .flatMap((p) => [`AAN ${fmtDayTime(p.start)}`, `UIT ${fmtDayTime(p.end)}`])
+          .flatMap((p) => [
+            `${t.on} ${this._dayTime(p.start)}`,
+            `${t.off} ${this._dayTime(p.end)}`,
+          ])
           .join(" · ")
       : "";
 
@@ -455,11 +663,11 @@ class EvChargePlannerCard extends HTMLElement {
     const sugCost = num(this._s("suggestedCost"));
     const sugKwh = suggested.reduce((sum, p) => sum + Number(p.kwh || 0), 0);
     this._el.sugline.innerHTML =
-      line(suggested, sugCost, sugKwh, sugKwh ? sugCost / sugKwh : null, "Voorstel") ||
-      "Geen voorstel — stel een laadbehoefte en een tijdstip in.";
+      line(suggested, sugCost, sugKwh, sugKwh ? sugCost / sugKwh : null,
+           t.labelProposal) || t.noProposal;
     this._el.sugtimeline.textContent = suggested.length
-      ? "Voorstel: " +
-        suggested.map((p) => `${fmtDayTime(p.start)}-${fmtTime(p.end)}`).join(" · ")
+      ? t.proposalPrefix +
+        suggested.map((p) => `${this._dayTime(p.start)}-${this._time(p.end)}`).join(" · ")
       : "";
 
     const over =
@@ -467,33 +675,31 @@ class EvChargePlannerCard extends HTMLElement {
     const nowOn = this._s("now")?.state === "on";
     // Both the label and aria-pressed change, because an override you cannot tell is
     // running is an override you forget, and this one costs money every quarter of an hour.
-    this._el.now.textContent = nowOn ? "Laad nu: aan" : "Laad nu";
+    this._el.now.textContent = nowOn ? t.btnNowOn : t.btnNow;
     this._el.now.setAttribute("aria-pressed", nowOn ? "true" : "false");
 
     const warns = [];
     if (nowOn) {
       warns.push(
-        `<div class="warn">Laad nu staat aan: er wordt geladen ongeacht de prijs, ` +
-          `tot je het uitzet. Het schema is zolang buiten werking.</div>`
+        `<div class="warn">${t.warnNowOn}</div>`
       );
     }
     if (over) {
       warns.push(
-        `<div class="warn">Prijzen zijn bekend tot ${fmtDayTime(horizonEnd)}. Een deel ` +
-          `van het plan valt daarbuiten en zit nog niet in het totaal.</div>`
+        `<div class="warn">${t.warnHorizon(this._dayTime(horizonEnd))}</div>`
       );
     }
     this._el.warnbox.innerHTML = warns.join("");
 
     this._el.periods.innerHTML = committed.length
-      ? `<thead><tr><th>Van</th><th>Tot</th><th class="num">kWh</th>
-         <th class="num">Kosten</th><th class="num">Gem. prijs</th></tr></thead><tbody>` +
+      ? `<thead><tr><th>${t.thFrom}</th><th>${t.thTo}</th><th class="num">kWh</th>
+         <th class="num">${t.thCost}</th><th class="num">${t.thAvgPrice}</th></tr></thead><tbody>` +
         committed
           .map(
-            (p) => `<tr><td>${fmtDayTime(p.start)}</td><td>${fmtDayTime(p.end)}</td>
+            (p) => `<tr><td>${this._dayTime(p.start)}</td><td>${this._dayTime(p.end)}</td>
               <td class="num">${Number(p.kwh).toFixed(1)}</td>
-              <td class="num">${eur(p.cost)}</td>
-              <td class="num">${eurKwh(p.avg)}</td></tr>`
+              <td class="num">${this._cost(p.cost)}</td>
+              <td class="num">${this._price(p.avg)}</td></tr>`
           )
           .join("") +
         "</tbody>"
@@ -501,6 +707,7 @@ class EvChargePlannerCard extends HTMLElement {
   }
 
   _drawSlotTable(prices, committed, slotMinutes, kw) {
+    const t = this._t();
     const kwhPerSlot = (kw || 0) * (slotMinutes / 60);
     const rows = prices
       .filter((s) =>
@@ -509,14 +716,15 @@ class EvChargePlannerCard extends HTMLElement {
         )
       )
       .map(
-        (s) => `<tr><td>${fmtDayTime(s.t)}</td><td class="num">${eurKwh(s.p)}</td>
+        (s) => `<tr><td>${this._dayTime(s.t)}</td><td class="num">${this._price(s.p)}</td>
           <td class="num">${kwhPerSlot.toFixed(2)}</td>
-          <td class="num">${eur(s.p * kwhPerSlot)}</td></tr>`
+          <td class="num">${this._cost(s.p * kwhPerSlot)}</td></tr>`
       );
     this._el.slots.innerHTML = rows.length
-      ? `<thead><tr><th>Start</th><th class="num">Prijs/kWh</th><th class="num">kWh</th>
-         <th class="num">Kosten</th></tr></thead><tbody>${rows.join("")}</tbody>`
-      : `<tbody><tr><td>Nog niets ingepland.</td></tr></tbody>`;
+      ? `<thead><tr><th>${t.thStart}</th><th class="num">${t.thPricePerKwh}</th>
+         <th class="num">kWh</th><th class="num">${t.thCost}</th></tr></thead>` +
+        `<tbody>${rows.join("")}</tbody>`
+      : `<tbody><tr><td>${t.nothingScheduled}</td></tr></tbody>`;
   }
 }
 
@@ -529,6 +737,7 @@ if (!window.customCards.some((c) => c.type === "ev-charge-planner-card")) {
   window.customCards.push({
     type: "ev-charge-planner-card",
     name: "EV Charge Planner",
-    description: "Prijsgrafiek met het laadplan, en knoppen om te starten en stoppen.",
+    description:
+      "Price chart with the charging plan on it, and buttons to start and stop.",
   });
 }
