@@ -23,12 +23,6 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # The brands check wants an icon in home-assistant/brands, which only
-          # exists once that pull request has been merged. Every new integration
-          # fails it, so ignoring it keeps the signal honest: the remaining checks
-          # tell us whether the packaging is right. Drop this line once the brands
-          # pull request lands.
-          ignore: brands
 
   tests:
     name: Unit tests

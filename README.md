@@ -1,5 +1,7 @@
 # EV Charge Planner
 
+<img src="custom_components/ev_charge_planner/brand/icon.png" width="96" align="right" alt="">
+
 Charge your car in the cheapest settlement periods of the next 48 hours.
 
 You say how much energy you want and by when. The planner reads your dynamic
