@@ -106,7 +106,9 @@ en geen voorwaarde; de integratie werkt zonder. Wat ze vragen:
   `icon.png` van 256×256 en eventueel een `logo.png` onder
   `custom_integrations/ev_charge_planner/`. Dit is het enige onderdeel waar je echt
   iets nieuws voor moet maken.
-- hassfest en de HACS-actie zijn groen.
+- hassfest en de HACS-actie zijn groen. De workflow slaat nu de `brands`-controle
+  over, omdat die niet kan slagen voordat die pull request binnen is; haal
+  `ignore: brands` uit `.github/workflows/validate.yml` zodra dat zo is.
 
 Daarna een pull request op `hacs/default` waarin je de repo aan het bestand
 `integration` toevoegt. Reken op wachttijd; het is een wachtrij met vrijwilligers.
