@@ -129,14 +129,6 @@ Daarna een pull request op `hacs/default` waarin je de repo aan het bestand
 
 ## Nog niet gedaan
 
-De README heeft nu geen schermafbeelding, maar een afbeelding van de kaart boven
-aan de README helpt mensen enorm bij de keuze om het te installeren. Als je er ooit een
-maakt: `docs/card.png`, en dan deze regel onder de inleiding:
-
-```markdown
-![De planner-kaart](docs/card.png)
-```
-
 De adapters voor Nord Pool en EnergyZero zijn op hun gedocumenteerde vorm gebouwd en
 nooit tegen een echte installatie getest. Dat staat eerlijk in de README. De eerste
 gebruiker met zo'n bron is je test; vraag hem om de attributen uit *Ontwikkelhulpmiddelen

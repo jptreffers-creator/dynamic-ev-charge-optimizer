@@ -10,6 +10,11 @@ charger on and off at those moments. The periods do not have to be contiguous â€
 will happily charge from 02:45 to 03:00, pause through an expensive quarter, and pick
 up again at 03:30, because that is where the money is.
 
+![The planner card: a day of quarter-hourly prices with the booked periods marked, the car's charge level, and what the plan will cost](docs/card.png)
+
+That is a real day: seven separate periods between 09:30 and 15:15, skipping the
+expensive quarters in between, 35 kWh for EUR 14.00 at an average of EUR 0.4001/kWh.
+
 ## What you need
 
 Two things, and only the first is required.
