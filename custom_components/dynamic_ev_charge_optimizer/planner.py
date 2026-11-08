@@ -1,4 +1,4 @@
-"""Pure planning logic for the EV charge planner.
+"""Pure planning logic for the Dynamic EV charge optimizer.
 
 Deliberately free of Home Assistant imports: everything here is plain Python so it can
 be exercised by unit tests in milliseconds. All the HA plumbing lives in

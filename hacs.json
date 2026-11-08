@@ -1,5 +1,5 @@
 {
-  "name": "EV Charge Planner",
+  "name": "Dynamic EV Charge Optimizer",
   "homeassistant": "2024.12.0",
   "render_readme": true
 }

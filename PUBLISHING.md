@@ -9,25 +9,25 @@ haalt de code op bij de tag maar leest het nummer uit het bestand.
 
 ## Eenmalig: de repo online zetten
 
-De repo staat nu lokaal in `C:\Users\jptre\Documents\claude\ev-charge-planner` met
+De repo staat nu lokaal in `C:\Users\jptre\Documents\claude\dynamic-ev-charge-optimizer` met
 `main` als branch en nog geen remote.
 
 Met de GitHub CLI, in één keer, vanuit die map:
 
 ```bash
-gh repo create jptreffers-creator/ev-charge-planner --public --source=. --remote=origin --push --description "Laad je auto in de goedkoopste kwartieren van de komende 48 uur"
+gh repo create jptreffers-creator/dynamic-ev-charge-optimizer --public --source=. --remote=origin --push --description "Laad je auto in de goedkoopste kwartieren van de komende 48 uur"
 ```
 
 Heb je `gh` niet, dan maak je de repo aan op github.com — publiek, naam
-`ev-charge-planner`, en **geen** README, licentie of .gitignore laten aanmaken, want
+`dynamic-ev-charge-optimizer`, en **geen** README, licentie of .gitignore laten aanmaken, want
 die heb je al. Daarna:
 
 ```bash
-git remote add origin https://github.com/jptreffers-creator/ev-charge-planner.git
+git remote add origin https://github.com/jptreffers-creator/dynamic-ev-charge-optimizer.git
 git push -u origin main
 ```
 
-De naam `jptreffers-creator/ev-charge-planner` zit al in `manifest.json` bij
+De naam `jptreffers-creator/dynamic-ev-charge-optimizer` zit al in `manifest.json` bij
 `documentation` en `issue_tracker`, en in de installatie-instructies in de README. Wijk
 je ervan af, pas die drie dan ook aan.
 
@@ -39,7 +39,7 @@ HACS-vereiste als je ooit in de standaardlijst wilt, en kosten nu niets.
 
 HACS biedt alleen releases aan, geen losse commits. Het ritme is elke keer hetzelfde:
 
-1. Hoog het `version`-veld in `custom_components/ev_charge_planner/manifest.json` op.
+1. Hoog het `version`-veld in `custom_components/dynamic_ev_charge_optimizer/manifest.json` op.
 2. Commit dat mee met je wijziging.
 3. Tag en push.
 4. Maak er een release van.
@@ -54,7 +54,7 @@ Zonder `gh`: op github.com → *Releases* → *Draft a new release*, kies de tag
 pushte, en publiceer.
 
 **Hoog het versienummer op bij élke wijziging aan de kaart.** De integratie serveert de
-kaart op `/ev_charge_planner/ev-charge-planner-card.js?v=<versie>`. Blijft die versie
+kaart op `/dynamic_ev_charge_optimizer/dynamic-ev-charge-optimizer-card.js?v=<versie>`. Blijft die versie
 gelijk, dan blijft de browser zijn oude kopie gebruiken, en zie je je wijziging niet —
 dat heeft ons hier een halve avond en zes bestandsnamen gekost. Verandert het nummer,
 dan verandert de URL en laadt de browser de kaart vanzelf opnieuw.
@@ -68,8 +68,8 @@ het in de release-notities.
 
 Handig om te weten als je het iemand uitlegt, en het staat zo ook in de README. In HACS
 onder het drie-puntjes-menu kiest men *Custom repositories*, vult daar
-`https://github.com/jptreffers-creator/ev-charge-planner` in met categorie
-*Integration*, installeert *EV Charge Planner*, herstart Home Assistant en voegt de
+`https://github.com/jptreffers-creator/dynamic-ev-charge-optimizer` in met categorie
+*Integration*, installeert *Dynamic EV Charge Optimizer*, herstart Home Assistant en voegt de
 integratie toe onder *Instellingen → Apparaten en diensten*.
 
 De kaart hoeft niemand te registreren. De integratie dient hem zelf uit en meldt hem
@@ -105,7 +105,7 @@ en geen voorwaarde; de integratie werkt zonder. Wat ze vragen:
 - Er is een pictogram. Dit is het enige onderdeel waar je echt iets nieuws voor moet
   maken, en de manier waarop is sinds Home Assistant 2026.3 veranderd: een custom
   integratie levert zijn eigen afbeeldingen mee, in een map `brand/` binnen de
-  integratie zelf. Voor ons dus `custom_components/ev_charge_planner/brand/`. Een
+  integratie zelf. Voor ons dus `custom_components/dynamic_ev_charge_optimizer/brand/`. Een
   pull request op `home-assistant/brands` is niet meer nodig; de oude map
   `custom_integrations/` daar wordt in hun eigen README legacy genoemd.
   - `icon.png`, vierkant, 256×256, en `icon@2x.png` van 512×512.

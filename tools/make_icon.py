@@ -2,7 +2,7 @@
 
 Kept in the repository so the icon is reproducible rather than a binary nobody
 can edit: change a colour or a bar height here and re-run. Home Assistant reads
-the result from custom_components/ev_charge_planner/brand/.
+the result from custom_components/dynamic_ev_charge_optimizer/brand/.
 
     python tools/make_icon.py
 
@@ -33,7 +33,7 @@ PROFILE = (
 
 OUT = (
     Path(__file__).resolve().parent.parent
-    / "custom_components" / "ev_charge_planner" / "brand"
+    / "custom_components" / "dynamic_ev_charge_optimizer" / "brand"
 )
 
 

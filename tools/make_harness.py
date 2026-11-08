@@ -27,7 +27,7 @@ import math
 import pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-CARD = ROOT / "custom_components" / "ev_charge_planner" / "frontend" / "ev-charge-planner-card.js"
+CARD = ROOT / "custom_components" / "dynamic_ev_charge_optimizer" / "frontend" / "dynamic-ev-charge-optimizer-card.js"
 OUT = ROOT / ".harness"
 
 #: language, and a currency that is not the developer's own
@@ -110,7 +110,7 @@ PAGE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EV Charge Planner card &mdash; %(lang)s</title>
+<title>Dynamic EV Charge Optimizer card &mdash; %(lang)s</title>
 <style>
   :root {
     --primary-text-color: #e1e1e1;
@@ -147,7 +147,7 @@ PAGE = """<!doctype html>
     config: { currency: "%(currency)s" },
     callService: (domain, service) => console.log("callService", domain, service),
   };
-  const el = document.createElement("ev-charge-planner-card");
+  const el = document.createElement("dynamic-ev-charge-optimizer-card");
   el.setConfig({});
   document.getElementById("host").appendChild(el);
   el.hass = hass;

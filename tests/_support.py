@@ -1,7 +1,7 @@
 """Load the pure modules without pulling in Home Assistant.
 
 The integration package's __init__ imports homeassistant, so a normal
-`from custom_components.ev_charge_planner.planner import ...` would require the whole
+`from custom_components.dynamic_ev_charge_optimizer.planner import ...` would require the whole
 of HA to be installed just to test a hundred lines of arithmetic.
 
 Instead we register a synthetic parent package with an empty __init__ and load the
@@ -17,8 +17,8 @@ import sys
 import types
 from pathlib import Path
 
-PKG = "_ev_charge_planner_pure"
-SRC = Path(__file__).resolve().parents[1] / "custom_components" / "ev_charge_planner"
+PKG = "_dynamic_ev_charge_optimizer_pure"
+SRC = Path(__file__).resolve().parents[1] / "custom_components" / "dynamic_ev_charge_optimizer"
 
 if PKG not in sys.modules:
     package = types.ModuleType(PKG)

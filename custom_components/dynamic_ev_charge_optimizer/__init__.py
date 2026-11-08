@@ -1,4 +1,4 @@
-"""EV Charge Planner: schedule car charging into the cheapest settlement periods."""
+"""Dynamic EV Charge Optimizer: schedule car charging into the cheapest settlement periods."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from .const import (
     SERVICE_REFRESH_CAR,
     SERVICE_STOP,
 )
-from .coordinator import EvChargePlannerCoordinator
+from .coordinator import DynamicEvChargeOptimizerCoordinator
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -36,7 +36,7 @@ PLATFORMS: list[Platform] = [
 SERVICE_SCHEMA = vol.Schema({vol.Optional("entry_id"): cv.string})
 
 _LOGGER = logging.getLogger(__name__)
-CARD_PATH = f"/{DOMAIN}/ev-charge-planner-card.js"
+CARD_PATH = f"/{DOMAIN}/dynamic-ev-charge-optimizer-card.js"
 FRONTEND_FLAG = f"{DOMAIN}_frontend_registered"
 
 
@@ -51,7 +51,7 @@ async def _async_register_card(hass: HomeAssistant) -> None:
         return
     hass.data[FRONTEND_FLAG] = True
 
-    source = Path(__file__).parent / "frontend" / "ev-charge-planner-card.js"
+    source = Path(__file__).parent / "frontend" / "dynamic-ev-charge-optimizer-card.js"
     await hass.http.async_register_static_paths(
         [StaticPathConfig(CARD_PATH, str(source), cache_headers=False)]
     )
@@ -62,7 +62,7 @@ async def _async_register_card(hass: HomeAssistant) -> None:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_register_card(hass)
-    coordinator = EvChargePlannerCoordinator(hass, entry)
+    coordinator = DynamicEvChargeOptimizerCoordinator(hass, entry)
     await coordinator.async_load()
     await coordinator.async_config_entry_first_refresh()
 
@@ -83,7 +83,7 @@ async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-def _coordinator_for(hass: HomeAssistant, call: ServiceCall) -> EvChargePlannerCoordinator:
+def _coordinator_for(hass: HomeAssistant, call: ServiceCall) -> DynamicEvChargeOptimizerCoordinator:
     """Resolve which planner a service call is aimed at.
 
     With a single planner the entry_id can be left out, which is what the card does.
@@ -99,12 +99,12 @@ def _coordinator_for(hass: HomeAssistant, call: ServiceCall) -> EvChargePlannerC
         for entry in entries:
             if entry.entry_id == entry_id:
                 return entry.runtime_data
-        raise ServiceValidationError(f"No EV Charge Planner with entry_id {entry_id}")
+        raise ServiceValidationError(f"No Dynamic EV Charge Optimizer with entry_id {entry_id}")
 
     if len(entries) == 1:
         return entries[0].runtime_data
     raise ServiceValidationError(
-        "More than one EV Charge Planner is configured; name one with entry_id"
+        "More than one Dynamic EV Charge Optimizer is configured; name one with entry_id"
     )
 
 

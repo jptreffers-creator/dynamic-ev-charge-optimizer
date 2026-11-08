@@ -9,14 +9,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import car_adapters
 from .const import CONF_CAR_PRESET, CONF_CAR_REFRESH_BUTTON
-from .coordinator import EvChargePlannerCoordinator
-from .entity import EvChargePlannerEntity
+from .coordinator import DynamicEvChargeOptimizerCoordinator
+from .entity import DynamicEvChargeOptimizerEntity
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator: EvChargePlannerCoordinator = entry.runtime_data
+    coordinator: DynamicEvChargeOptimizerCoordinator = entry.runtime_data
     buttons: list[ButtonEntity] = [
         StartChargingButton(coordinator),
         StopButton(coordinator),
@@ -34,7 +34,7 @@ async def async_setup_entry(
     async_add_entities(buttons)
 
 
-class StartChargingButton(EvChargePlannerEntity, ButtonEntity):
+class StartChargingButton(DynamicEvChargeOptimizerEntity, ButtonEntity):
     """Work out the cheapest moments and commit them as the schedule.
 
     It does not start the charger there and then: it books the cheap periods, and
@@ -44,14 +44,14 @@ class StartChargingButton(EvChargePlannerEntity, ButtonEntity):
     _attr_name = "Start charging"
     _attr_icon = "mdi:play"
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "start_charging")
 
     async def async_press(self) -> None:
         await self.coordinator.async_apply_suggestion()
 
 
-class StopButton(EvChargePlannerEntity, ButtonEntity):
+class StopButton(DynamicEvChargeOptimizerEntity, ButtonEntity):
     """Clear the schedule and switch off.
 
     Both halves are needed. Clearing alone would leave the charger running, because
@@ -61,20 +61,20 @@ class StopButton(EvChargePlannerEntity, ButtonEntity):
     _attr_name = "Stop"
     _attr_icon = "mdi:stop"
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "stop")
 
     async def async_press(self) -> None:
         await self.coordinator.async_stop()
 
 
-class AdoptMeasuredPowerButton(EvChargePlannerEntity, ButtonEntity):
+class AdoptMeasuredPowerButton(DynamicEvChargeOptimizerEntity, ButtonEntity):
     """Calibrate: replace the configured charging power with the measured one."""
 
     _attr_name = "Use measured charging power"
     _attr_icon = "mdi:speedometer"
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "adopt_measured_power")
 
     @property
@@ -85,7 +85,7 @@ class AdoptMeasuredPowerButton(EvChargePlannerEntity, ButtonEntity):
         await self.coordinator.async_adopt_measured_power()
 
 
-class RefreshCarButton(EvChargePlannerEntity, ButtonEntity):
+class RefreshCarButton(DynamicEvChargeOptimizerEntity, ButtonEntity):
     """Ask the car for a fresh charge level, subject to the guards.
 
     Pressing it when the reading is still fresh, or again straight away, does
@@ -96,7 +96,7 @@ class RefreshCarButton(EvChargePlannerEntity, ButtonEntity):
     _attr_name = "Refresh car"
     _attr_icon = "mdi:car-connected"
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "refresh_car")
 
     async def async_press(self) -> None:

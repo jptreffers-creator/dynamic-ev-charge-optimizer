@@ -1,10 +1,10 @@
-"""Constants and configuration keys for the EV charge planner."""
+"""Constants and configuration keys for the Dynamic EV charge optimizer."""
 
 from __future__ import annotations
 
 from typing import Final
 
-DOMAIN: Final = "ev_charge_planner"
+DOMAIN: Final = "dynamic_ev_charge_optimizer"
 
 # How often the plan is recomputed. One minute, not five: the switch points sit on
 # settlement boundaries, and a five-minute grid made the charger start and stop up to

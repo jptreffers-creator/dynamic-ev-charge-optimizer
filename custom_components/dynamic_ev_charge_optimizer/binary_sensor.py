@@ -7,18 +7,18 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import EvChargePlannerCoordinator
-from .entity import EvChargePlannerEntity
+from .coordinator import DynamicEvChargeOptimizerCoordinator
+from .entity import DynamicEvChargeOptimizerEntity
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator: EvChargePlannerCoordinator = entry.runtime_data
+    coordinator: DynamicEvChargeOptimizerCoordinator = entry.runtime_data
     async_add_entities([ChargeNowSensor(coordinator), PlanCompleteSensor(coordinator)])
 
 
-class ChargeNowSensor(EvChargePlannerEntity, BinarySensorEntity):
+class ChargeNowSensor(DynamicEvChargeOptimizerEntity, BinarySensorEntity):
     """Whether this moment falls inside a scheduled period.
 
     A lamp, not a switch: it says what the plan wants, which is not the same as what
@@ -29,7 +29,7 @@ class ChargeNowSensor(EvChargePlannerEntity, BinarySensorEntity):
     _attr_name = "Charge now"
     _attr_icon = "mdi:ev-plug-type2"
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "charge_now")
 
     @property
@@ -37,7 +37,7 @@ class ChargeNowSensor(EvChargePlannerEntity, BinarySensorEntity):
         return bool(self.plan and self.plan.charge_now)
 
 
-class PlanCompleteSensor(EvChargePlannerEntity, BinarySensorEntity):
+class PlanCompleteSensor(DynamicEvChargeOptimizerEntity, BinarySensorEntity):
     """Off when part of the schedule falls beyond the last known price.
 
     Tomorrow's prices usually appear in the early afternoon, so a plan made before
@@ -49,7 +49,7 @@ class PlanCompleteSensor(EvChargePlannerEntity, BinarySensorEntity):
     _attr_icon = "mdi:check-decagram"
     _attr_entity_registry_enabled_default = False
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "plan_complete")
 
     @property

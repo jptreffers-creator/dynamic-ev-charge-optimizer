@@ -1,5 +1,5 @@
 /*
- * ev-charge-planner-card
+ * dynamic-ev-charge-optimizer-card
  *
  * Shows the price curve with the planned periods drawn on it, what they cost, and
  * two buttons: start and stop. There is deliberately no way to drag out a period by
@@ -54,7 +54,7 @@ const STRINGS = {
     btnNowOn: "Charge now: on",
     btnStop: "Stop",
     slotsSummary: "Price per period in the plan",
-    notFound: "EV Charge Planner not found. Is the integration set up?",
+    notFound: "Dynamic EV Charge Optimizer not found. Is the integration set up?",
     started: (periods, cost) => `Started. Scheduled: ${periods}, ${cost}.`,
     noProposalPossible:
       "No proposal is possible. Check how much is needed and the deadline.",
@@ -121,7 +121,7 @@ const STRINGS = {
     btnNowOn: "Laad nu: aan",
     btnStop: "Stop",
     slotsSummary: "Prijs per periode in het plan",
-    notFound: "EV Charge Planner niet gevonden. Is de integratie ingesteld?",
+    notFound: "Dynamic EV Charge Optimizer niet gevonden. Is de integratie ingesteld?",
     started: (periods, cost) => `Gestart. Ingepland: ${periods}, ${cost}.`,
     noProposalPossible:
       "Geen voorstel mogelijk. Controleer de laadbehoefte en het tijdstip.",
@@ -180,7 +180,7 @@ const STRINGS = {
 };
 
 
-class EvChargePlannerCard extends HTMLElement {
+class DynamicEvChargeOptimizerCard extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: "open" });
@@ -257,7 +257,7 @@ class EvChargePlannerCard extends HTMLElement {
     // harmless however often the dashboard is opened.
     if (!this._askedForCar && this._hass) {
       this._askedForCar = true;
-      this._hass.callService("ev_charge_planner", "refresh_car", {});
+      this._hass.callService("dynamic_ev_charge_optimizer", "refresh_car", {});
     }
   }
 
@@ -268,7 +268,7 @@ class EvChargePlannerCard extends HTMLElement {
     this._render();
     if (!this._askedForCar && this.isConnected) {
       this._askedForCar = true;
-      hass.callService("ev_charge_planner", "refresh_car", {});
+      hass.callService("dynamic_ev_charge_optimizer", "refresh_car", {});
     }
   }
 
@@ -728,15 +728,15 @@ class EvChargePlannerCard extends HTMLElement {
   }
 }
 
-if (!customElements.get("ev-charge-planner-card")) {
-  customElements.define("ev-charge-planner-card", EvChargePlannerCard);
+if (!customElements.get("dynamic-ev-charge-optimizer-card")) {
+  customElements.define("dynamic-ev-charge-optimizer-card", DynamicEvChargeOptimizerCard);
 }
 
 window.customCards = window.customCards || [];
-if (!window.customCards.some((c) => c.type === "ev-charge-planner-card")) {
+if (!window.customCards.some((c) => c.type === "dynamic-ev-charge-optimizer-card")) {
   window.customCards.push({
-    type: "ev-charge-planner-card",
-    name: "EV Charge Planner",
+    type: "dynamic-ev-charge-optimizer-card",
+    name: "Dynamic EV Charge Optimizer",
     description:
       "Price chart with the charging plan on it, and buttons to start and stop.",
   });

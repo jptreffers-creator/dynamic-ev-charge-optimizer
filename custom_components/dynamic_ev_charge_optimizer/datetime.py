@@ -10,8 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .coordinator import EvChargePlannerCoordinator
-from .entity import EvChargePlannerEntity
+from .coordinator import DynamicEvChargeOptimizerCoordinator
+from .entity import DynamicEvChargeOptimizerEntity
 
 
 async def async_setup_entry(
@@ -20,7 +20,7 @@ async def async_setup_entry(
     async_add_entities([DeadlineEntity(entry.runtime_data)])
 
 
-class DeadlineEntity(EvChargePlannerEntity, DateTimeEntity):
+class DeadlineEntity(DynamicEvChargeOptimizerEntity, DateTimeEntity):
     """When the car should be ready.
 
     Set it to any moment you like. Once that moment has passed it falls back to the
@@ -31,7 +31,7 @@ class DeadlineEntity(EvChargePlannerEntity, DateTimeEntity):
     _attr_name = "Ready by"
     _attr_icon = "mdi:clock-end"
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "deadline")
 
     @property

@@ -1,0 +1,18 @@
+{
+  "domain": "dynamic_ev_charge_optimizer",
+  "name": "Dynamic EV Charge Optimizer",
+  "codeowners": [
+    "@jptreffers-creator"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "frontend"
+  ],
+  "documentation": "https://github.com/jptreffers-creator/dynamic-ev-charge-optimizer",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/jptreffers-creator/dynamic-ev-charge-optimizer/issues",
+  "requirements": [],
+  "version": "0.5.0"
+}

@@ -67,7 +67,7 @@ def _as_float(state: State | None) -> float | None:
         return None
 
 
-class EvChargePlannerCoordinator(DataUpdateCoordinator[Plan]):
+class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
     """Computes the plan and keeps the charger in step with it."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:

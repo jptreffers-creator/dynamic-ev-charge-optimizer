@@ -1,6 +1,6 @@
-# EV Charge Planner
+# Dynamic EV Charge Optimizer
 
-<img src="custom_components/ev_charge_planner/brand/icon.png" width="96" align="right" alt="">
+<img src="custom_components/dynamic_ev_charge_optimizer/brand/icon.png" width="96" align="right" alt="">
 
 Charge your car in the cheapest settlement periods of the next 48 hours.
 
@@ -55,13 +55,13 @@ for it to become a preset.
 ### Through HACS
 
 1. HACS → three-dot menu → **Custom repositories**
-2. Add `https://github.com/jptreffers-creator/ev-charge-planner`, category **Integration**
-3. Install **EV Charge Planner**, then restart Home Assistant
-4. Settings → Devices & services → **Add integration** → *EV Charge Planner*
+2. Add `https://github.com/jptreffers-creator/dynamic-ev-charge-optimizer`, category **Integration**
+3. Install **Dynamic EV Charge Optimizer**, then restart Home Assistant
+4. Settings → Devices & services → **Add integration** → *Dynamic EV Charge Optimizer*
 
 ### By hand
 
-Copy `custom_components/ev_charge_planner` into your `config/custom_components/`
+Copy `custom_components/dynamic_ev_charge_optimizer` into your `config/custom_components/`
 directory and restart Home Assistant.
 
 The card comes with the integration and registers itself. There is nothing to add
@@ -87,7 +87,7 @@ All of it can be changed afterwards under the integration's **Configure** button
 Add the card to any dashboard:
 
 ```yaml
-type: custom:ev-charge-planner-card
+type: custom:dynamic-ev-charge-optimizer-card
 ```
 
 No options needed; it finds its own entities. If you run more than one planner, give
@@ -129,7 +129,7 @@ Amounts use the currency from Home Assistant's own setting (*Settings -> System 
 General*), not a hard-coded euro sign, so a Nord Pool user sees kroner.
 
 Adding a language means adding one block to `STRINGS` at the top of
-`custom_components/ev_charge_planner/frontend/ev-charge-planner-card.js`. Entries
+`custom_components/dynamic_ev_charge_optimizer/frontend/dynamic-ev-charge-optimizer-card.js`. Entries
 are plain strings or small functions, so word order stays yours. A partial
 translation is fine: anything you leave out comes through in English. To see the
 result without a Home Assistant to hand, `python tools/make_harness.py` writes a
@@ -190,7 +190,7 @@ perfectly normal real-world figure.
 | `datetime.*_ready_by` | The deadline |
 | `button.*` | Start charging, Stop, adopt measured power, refresh car |
 
-Services mirror the buttons: `ev_charge_planner.apply_suggestion`, `.stop`,
+Services mirror the buttons: `dynamic_ev_charge_optimizer.apply_suggestion`, `.stop`,
 `.refresh_car` and `.adopt_measured_power`. With more than one planner configured,
 pass `entry_id`.
 

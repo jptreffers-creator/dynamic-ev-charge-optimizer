@@ -1,4 +1,4 @@
-"""Configuration UI for the EV charge planner.
+"""Configuration UI for the Dynamic EV charge optimizer.
 
 Everything lives in entry.options rather than entry.data, so the options flow can
 change any of it later without a reinstall. The two flows share their schema builders
@@ -41,7 +41,7 @@ from .const import (
     DOMAIN,
 )
 
-TITLE = "EV Charge Planner"
+TITLE = "Dynamic EV Charge Optimizer"
 
 
 def _entity(domain: str) -> selector.EntitySelector:
@@ -191,7 +191,7 @@ def defaults_schema(current: dict[str, Any]) -> vol.Schema:
     )
 
 
-class EvChargePlannerConfigFlow(ConfigFlow, domain=DOMAIN):
+class DynamicEvChargeOptimizerConfigFlow(ConfigFlow, domain=DOMAIN):
     """Walk the user through price source, charger, car and defaults."""
 
     VERSION = 1
@@ -249,10 +249,10 @@ class EvChargePlannerConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(entry: ConfigEntry) -> OptionsFlow:
-        return EvChargePlannerOptionsFlow()
+        return DynamicEvChargeOptimizerOptionsFlow()
 
 
-class EvChargePlannerOptionsFlow(OptionsFlow):
+class DynamicEvChargeOptimizerOptionsFlow(OptionsFlow):
     """The same four steps again, pre-filled with what is configured now."""
 
     def __init__(self) -> None:

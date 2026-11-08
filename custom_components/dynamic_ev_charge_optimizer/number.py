@@ -16,8 +16,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import CONF_BATTERY_CAPACITY, CONF_CHARGE_POWER, CONF_TARGET_SOC
-from .coordinator import EvChargePlannerCoordinator
-from .entity import EvChargePlannerEntity
+from .coordinator import DynamicEvChargeOptimizerCoordinator
+from .entity import DynamicEvChargeOptimizerEntity
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -81,11 +81,11 @@ NUMBERS: tuple[PlannerNumberDescription, ...] = (
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator: EvChargePlannerCoordinator = entry.runtime_data
+    coordinator: DynamicEvChargeOptimizerCoordinator = entry.runtime_data
     async_add_entities(PlannerNumber(coordinator, desc) for desc in NUMBERS)
 
 
-class PlannerNumber(EvChargePlannerEntity, NumberEntity):
+class PlannerNumber(DynamicEvChargeOptimizerEntity, NumberEntity):
     """A view on one coordinator setting.
 
     The value lives in the coordinator's store rather than in the entity, so the
@@ -97,7 +97,7 @@ class PlannerNumber(EvChargePlannerEntity, NumberEntity):
 
     def __init__(
         self,
-        coordinator: EvChargePlannerCoordinator,
+        coordinator: DynamicEvChargeOptimizerCoordinator,
         description: PlannerNumberDescription,
     ) -> None:
         super().__init__(coordinator, description.key)

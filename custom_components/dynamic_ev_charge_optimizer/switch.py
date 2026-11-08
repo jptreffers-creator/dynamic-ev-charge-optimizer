@@ -9,18 +9,18 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .coordinator import EvChargePlannerCoordinator
-from .entity import EvChargePlannerEntity
+from .coordinator import DynamicEvChargeOptimizerCoordinator
+from .entity import DynamicEvChargeOptimizerEntity
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator: EvChargePlannerCoordinator = entry.runtime_data
+    coordinator: DynamicEvChargeOptimizerCoordinator = entry.runtime_data
     async_add_entities([ChargeImmediatelySwitch(coordinator)])
 
 
-class ChargeImmediatelySwitch(EvChargePlannerEntity, SwitchEntity):
+class ChargeImmediatelySwitch(DynamicEvChargeOptimizerEntity, SwitchEntity):
     """Charge right now, ignoring the schedule and the prices.
 
     A switch and not a button, because this has a state worth seeing. An override
@@ -34,7 +34,7 @@ class ChargeImmediatelySwitch(EvChargePlannerEntity, SwitchEntity):
     _attr_name = "Charge immediately"
     _attr_icon = "mdi:flash"
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "charge_immediately")
 
     @property

@@ -20,8 +20,8 @@ from homeassistant.util import dt as dt_util
 
 from .car_adapters import PRESET_NONE
 from .const import CONF_CAR_PRESET
-from .coordinator import EvChargePlannerCoordinator
-from .entity import EvChargePlannerEntity
+from .coordinator import DynamicEvChargeOptimizerCoordinator
+from .entity import DynamicEvChargeOptimizerEntity
 from .planner import Plan, PlanPart
 
 
@@ -38,7 +38,7 @@ def _periods_text(part: PlanPart) -> str:
 
 @dataclass(frozen=True, kw_only=True)
 class PlannerSensorDescription(SensorEntityDescription):
-    value: Callable[[EvChargePlannerCoordinator, Plan | None], Any]
+    value: Callable[[DynamicEvChargeOptimizerCoordinator, Plan | None], Any]
     attributes: Callable[[Plan | None], dict[str, Any]] | None = None
 
 
@@ -141,7 +141,7 @@ SENSORS: tuple[PlannerSensorDescription, ...] = (
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    coordinator: EvChargePlannerCoordinator = entry.runtime_data
+    coordinator: DynamicEvChargeOptimizerCoordinator = entry.runtime_data
     entities: list[SensorEntity] = [PlannerSensor(coordinator, desc) for desc in SENSORS]
 
     # Republishing the car's charge level under our own name gives the card one entity
@@ -153,14 +153,14 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class CarChargeLevelSensor(EvChargePlannerEntity, SensorEntity):
+class CarChargeLevelSensor(DynamicEvChargeOptimizerEntity, SensorEntity):
     """The car's charge level as the planner sees it."""
 
     _attr_name = "Car charge level"
     _attr_device_class = SensorDeviceClass.BATTERY
     _attr_native_unit_of_measurement = PERCENTAGE
 
-    def __init__(self, coordinator: EvChargePlannerCoordinator) -> None:
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
         super().__init__(coordinator, "car_charge_level")
 
     @property
@@ -177,12 +177,12 @@ class CarChargeLevelSensor(EvChargePlannerEntity, SensorEntity):
         }
 
 
-class PlannerSensor(EvChargePlannerEntity, SensorEntity):
+class PlannerSensor(DynamicEvChargeOptimizerEntity, SensorEntity):
     entity_description: PlannerSensorDescription
 
     def __init__(
         self,
-        coordinator: EvChargePlannerCoordinator,
+        coordinator: DynamicEvChargeOptimizerCoordinator,
         description: PlannerSensorDescription,
     ) -> None:
         super().__init__(coordinator, description.key)
