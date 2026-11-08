@@ -102,13 +102,25 @@ en geen voorwaarde; de integratie werkt zonder. Wat ze vragen:
 - `manifest.json` heeft `documentation`, `issue_tracker`, `codeowners`, `version` en
   `config_flow`. Dat is nu alles al het geval.
 - Er is minstens één release.
-- Er ligt een merk-afbeelding in `home-assistant/brands`: een pull request met een
-  `icon.png` van 256×256 en eventueel een `logo.png` onder
-  `custom_integrations/ev_charge_planner/`. Dit is het enige onderdeel waar je echt
-  iets nieuws voor moet maken.
+- Er is een pictogram. Dit is het enige onderdeel waar je echt iets nieuws voor moet
+  maken, en de manier waarop is sinds Home Assistant 2026.3 veranderd: een custom
+  integratie levert zijn eigen afbeeldingen mee, in een map `brand/` binnen de
+  integratie zelf. Voor ons dus `custom_components/ev_charge_planner/brand/`. Een
+  pull request op `home-assistant/brands` is niet meer nodig; de oude map
+  `custom_integrations/` daar wordt in hun eigen README legacy genoemd.
+  - `icon.png`, vierkant, 256×256, en `icon@2x.png` van 512×512.
+  - `logo.png` mag, liefst liggend, kortste zijde 128–256 px (en `logo@2x.png`
+    256–512 px). Laat je hem weg, dan wordt het pictogram gebruikt.
+  - PNG, graag met transparantie, en bijgesneden zodat er geen lege rand om zit.
+  - `dark_icon.png` en `dark_logo.png` alleen als het donkere thema het nodig heeft.
+  - Gebruik geen afbeeldingen met Home Assistant-huisstijl: dat wekt de indruk dat
+    het een officiële integratie is. En niet het logo van een ander bedrijf.
+  - De Marketplace haalt die afbeeldingen elk uur op bij de *laatste release*, dus
+    ze moeten in een release zitten voordat ze ergens opduiken. Reken daarnaast op
+    cachevertraging: browsers 7 dagen, Cloudflare 24 uur.
 - hassfest en de HACS-actie zijn groen. De workflow slaat nu de `brands`-controle
-  over, omdat die niet kan slagen voordat die pull request binnen is; haal
-  `ignore: brands` uit `.github/workflows/validate.yml` zodra dat zo is.
+  over met `ignore: brands` in `.github/workflows/validate.yml`. Zodra je die
+  `brand/`-map hebt, haal die regel er weer uit en kijk of de controle slaagt.
 
 Daarna een pull request op `hacs/default` waarin je de repo aan het bestand
 `integration` toevoegt. Reken op wachttijd; het is een wachtrij met vrijwilligers.
