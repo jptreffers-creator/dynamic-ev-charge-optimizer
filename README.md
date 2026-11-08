@@ -87,7 +87,7 @@ No options needed; it finds its own entities. If you run more than one planner, 
 each card a `prefix:` matching its entity names.
 
 Then: set how full you want the car, or a fixed number of kWh, set when it should be
-ready, and press **Start laden!**. The planner books the cheapest periods and charges
+ready, and press **Schema laden**. The planner books the cheapest periods and charges
 there. **Stop** clears the schedule and switches off.
 
 **With no schedule, the planner does not touch your charger at all.** That is
@@ -96,7 +96,7 @@ for the switch.
 
 ### Charging now, whatever the price
 
-**Nu laden** ignores the schedule and the prices and switches the charger on straight
+**Laad nu** ignores the schedule and the prices and switches the charger on straight
 away. Use it when you need the car charged more than you need it charged cheaply.
 
 It stays on until you turn it off. It does not expire by itself, and that is a choice

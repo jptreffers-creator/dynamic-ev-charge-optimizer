@@ -201,8 +201,8 @@ class EvChargePlannerCard extends HTMLElement {
         <div class="note" id="hint"></div>
 
         <div class="row">
-          <button id="start">Start laden!</button>
-          <button id="now" aria-pressed="false">Nu laden</button>
+          <button id="start">Schema laden</button>
+          <button id="now" aria-pressed="false">Laad nu</button>
           <button id="stop">Stop</button>
         </div>
 
@@ -245,8 +245,8 @@ class EvChargePlannerCard extends HTMLElement {
       this._hass.callService("switch", on ? "turn_off" : "turn_on", { entity_id: id });
       this._say(
         on
-          ? "Nu laden uit. Het schema bepaalt weer wanneer er geladen wordt."
-          : "Nu laden aan. De laadpaal gaat aan, ongeacht de prijs."
+          ? "Laad nu uit. Het schema bepaalt weer wanneer er geladen wordt."
+          : "Laad nu aan. De laadpaal gaat aan, ongeacht de prijs."
       );
     });
 
@@ -467,13 +467,13 @@ class EvChargePlannerCard extends HTMLElement {
     const nowOn = this._s("now")?.state === "on";
     // Both the label and aria-pressed change, because an override you cannot tell is
     // running is an override you forget, and this one costs money every quarter of an hour.
-    this._el.now.textContent = nowOn ? "Nu laden: aan" : "Nu laden";
+    this._el.now.textContent = nowOn ? "Laad nu: aan" : "Laad nu";
     this._el.now.setAttribute("aria-pressed", nowOn ? "true" : "false");
 
     const warns = [];
     if (nowOn) {
       warns.push(
-        `<div class="warn">Nu laden staat aan: er wordt geladen ongeacht de prijs, ` +
+        `<div class="warn">Laad nu staat aan: er wordt geladen ongeacht de prijs, ` +
           `tot je het uitzet. Het schema is zolang buiten werking.</div>`
       );
     }
