@@ -15,13 +15,30 @@ up again at 03:30, because that is where the money is.
 That is a real day: seven separate periods between 09:30 and 15:15, skipping the
 expensive quarters in between, 35 kWh for EUR 14.00 at an average of EUR 0.4001/kWh.
 
+## Install in five steps
+
+1. In **HACS → Custom repositories**, add
+   `https://github.com/jptreffers-creator/dynamic-ev-charge-optimizer` as an
+   *Integration*, install it, and restart Home Assistant.
+2. Make sure you have a price integration: **ENTSO-e** or **EnergyZero**, the latter
+   built into Home Assistant and needing no account. See [Price sources](#price-sources).
+3. **Settings → Devices & services → Add integration → Dynamic EV Charge Optimizer.**
+   Four questions: prices, charger, car, defaults. See [Setting it up](#setting-it-up).
+4. **Settings → Dashboards → Add dashboard**, then **EV charge planner** under
+   *Community dashboards*. See [Add the dashboard](#add-the-dashboard).
+5. On the card, set how full you want the car and when it has to be ready, then press
+   **Charge on schedule**.
+
+That is the whole installation. Everything below is detail, and you only need it if
+something is not what you expected.
+
 ## What you need
 
 Two things, and only the first is required.
 
-**A price entity that publishes future prices.** Not just the current price — the
-planner needs the upcoming periods in an attribute. In practice that means one of the
-integrations below, or anything else that works the same way.
+**An integration that publishes future prices.** Not just the current price — the
+planner needs the upcoming periods, either as an attribute on a sensor or from an
+action it can call. In practice that means one of the integrations below.
 
 **An entity that turns charging on and off.** Usually a `switch` from your charger's
 integration. The planner never talks to your charger directly: it flips that entity,
