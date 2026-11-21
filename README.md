@@ -43,23 +43,21 @@ not: their sensors carry only the current price and the day's extremes, and the 
 list comes from an action that returns it. An adapter that could only read attributes
 would be unable to use any of them.
 
-| Source | Kind | Status |
-|---|---|---|
-| ENTSO-e (HACS) | Attribute | Verified against a live instance |
-| EnergyZero (built in) | Action | Built from the action's source, not yet seen live |
-| easyEnergy (built in) | Action | Built from the action's source, not yet seen live |
-| Nord Pool (HACS) | Attribute | Written from its documented shape, untested |
-| Anything else | Attribute | Use **Other** and name the attribute and keys yourself |
+| Source | Kind |
+|---|---|
+| ENTSO-e (the HACS integration) | Attribute |
+| EnergyZero (built into Home Assistant) | Action |
+| Anything else | Use **Other** and name the attribute and keys yourself |
+
+Both presets have been run against a live installation. The list is short on
+purpose: earlier versions shipped presets built from documentation alone, and two of
+them were quietly wrong in ways that only showed up as an empty dashboard. A preset
+here is a promise that it works.
 
 For an action source, pick which configuration of that integration to ask; it is
 called at most once every fifteen minutes, because day-ahead prices change twice a
 day. Install that integration first — the setup refuses with an explanation rather
 than showing you an empty picker.
-
-Note that the built-in Nord Pool integration is *not* the one listed above. It keeps
-its prices behind an action whose response is keyed by bidding area, which does not
-fit this shape yet; the preset is for the older HACS integration that publishes
-`raw_today`.
 
 If your source is not listed, pick **Other**. You will be asked for the name of the
 attribute holding the price list, and the keys inside each entry. Look them up under
@@ -83,7 +81,7 @@ match the bill.
 
 It happens. The ENTSO-e Transparency Platform went down three times in one month
 during development. When a source stops answering, the planner keeps the prices and
-the schedule it already had rather than erasing them, and **Laad nu** charges
+the schedule it already had rather than erasing them, and **Charge now** charges
 regardless of price. If one source is unreliable where you live, switching to another
 is a matter of reopening the setup.
 
@@ -121,16 +119,7 @@ All of it can be changed afterwards under the integration's **Configure** button
 
 ## Using it
 
-Add the card to any dashboard:
-
-```yaml
-type: custom:dynamic-ev-charge-optimizer-card
-```
-
-No options needed; it finds its own entities. If you run more than one planner, give
-each card a `prefix:` matching its entity names.
-
-### A whole dashboard, without typing entity ids
+### Add the dashboard
 
 *Settings → Dashboards → Add dashboard*, then **EV charge planner** under *Community
 dashboards*. That builds a three-view dashboard — the planner, the details, the
@@ -160,8 +149,20 @@ Being loaded as an extra frontend module, which is how the card itself gets in, 
 enough to render the card but not enough for the dialog to find the strategy. That
 is not written down anywhere; it was found the hard way.
 
-Then: set how full you want the car, or a fixed number of kWh, set when it should be
-ready, and press **Schema laden**. The planner books the cheapest periods and charges
+### Or put the card on a dashboard you already have
+
+```yaml
+type: custom:dynamic-ev-charge-optimizer-card
+```
+
+No options needed; it finds its own entities. If you run more than one planner, give
+each card a `prefix:` matching its entity names. You get the planner itself this way,
+without the two supporting views.
+
+### Charging
+
+Set how full you want the car, or a fixed number of kWh, set when it should be ready,
+and press **Charge on schedule**. The planner books the cheapest periods and charges
 there. **Stop** clears the schedule and switches off.
 
 **With no schedule, the planner does not touch your charger at all.** That is
@@ -170,8 +171,8 @@ for the switch.
 
 ### Charging now, whatever the price
 
-**Laad nu** ignores the schedule and the prices and switches the charger on straight
-away. Use it when you need the car charged more than you need it charged cheaply.
+**Charge now** ignores the schedule and the prices and switches the charger on
+straight away. Use it when you need the car charged more than you need it charged cheaply.
 
 It stays on until you turn it off. It does not expire by itself, and that is a choice
 rather than an omission: the obvious expiry would be "stop at the target charge level",
@@ -193,7 +194,7 @@ Any other language falls back to English rather than showing blanks, while dates
 times and numbers still follow that language's own conventions.
 
 Amounts use the currency from Home Assistant's own setting (*Settings -> System ->
-General*), not a hard-coded euro sign, so a Nord Pool user sees kroner.
+General*), not a hard-coded euro sign, so someone billed in kroner sees kroner.
 
 Adding a language means adding one block to `STRINGS` at the top of
 `custom_components/dynamic_ev_charge_optimizer/frontend/dynamic-ev-charge-optimizer-card.js`. Entries

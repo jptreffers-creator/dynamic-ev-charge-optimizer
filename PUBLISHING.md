@@ -129,7 +129,13 @@ Daarna een pull request op `hacs/default` waarin je de repo aan het bestand
 
 ## Nog niet gedaan
 
-De adapters voor Nord Pool en EnergyZero zijn op hun gedocumenteerde vorm gebouwd en
-nooit tegen een echte installatie getest. Dat staat eerlijk in de README. De eerste
-gebruiker met zo'n bron is je test; vraag hem om de attributen uit *Ontwikkelhulpmiddelen
-→ Statussen* als het niet werkt.
+Lever geen prijsbron mee die je niet zelf hebt zien draaien. Dat is hier misgegaan:
+er stonden presets in voor Nord Pool, EnergyZero en easyEnergy die op hun
+gedocumenteerde vorm waren gebouwd, en twee ervan waren gewoon fout — EnergyZero
+zocht naar een sleutel `time` die niet bestaat. Een gebruiker merkt dat pas als zijn
+dashboard leeg blijft, en gaat dan bij zichzelf zoeken.
+
+Nu staan alleen ENTSO-e en EnergyZero in de lijst, allebei echt gedraaid. Komt er een
+bron bij, laat hem dan eerst door iemand met die integratie bevestigen; tot die tijd
+is **Other** de eerlijke plek, want dan vult de gebruiker de namen zelf in en weet hij
+dat hij dat doet.

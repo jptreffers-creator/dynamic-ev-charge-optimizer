@@ -14,7 +14,6 @@ from _support import price_adapters  # noqa: E402
 
 PRESET_ENTSOE = price_adapters.PRESET_ENTSOE
 PRESET_ENERGYZERO = price_adapters.PRESET_ENERGYZERO
-PRESET_EASYENERGY = price_adapters.PRESET_EASYENERGY
 PRESETS = price_adapters.PRESETS
 PriceReadError = price_adapters.PriceReadError
 ActionSpec = price_adapters.ActionSpec
@@ -133,7 +132,6 @@ class TestGenericOverrides(unittest.TestCase):
 
         shape = shape_from_config({CONF_PRICE_PRESET: PRESET_ENTSOE})
         self.assertEqual(shape.attribute, "prices")
-        self.assertTrue(shape.tested)
 
 
 @unittest.skipUnless(SNAPSHOT.exists(), "no live snapshot available")
@@ -150,9 +148,9 @@ class TestAgainstRealEntsoeData(unittest.TestCase):
         self.assertEqual(slots, sorted(slots, key=lambda s: s.start))
 
 
-# Shaped like the real answers. The EnergyZero one is taken from the serialiser in
-# homeassistant/components/energyzero/services.py, which emits all four keys;
-# easyEnergy emits only timestamp and price.
+# Shaped like a real answer, taken from the serialiser in
+# homeassistant/components/energyzero/services.py and confirmed against a live
+# instance.
 ENERGYZERO_RESPONSE = {
     "prices": [
         {
@@ -176,13 +174,6 @@ ENERGYZERO_RESPONSE = {
     ]
 }
 
-EASYENERGY_RESPONSE = {
-    "prices": [
-        {"timestamp": "2026-11-21 00:00:00+01:00", "price": 0.08418},
-        {"timestamp": "2026-11-21 00:15:00+01:00", "price": 0.08201},
-    ]
-}
-
 
 class TestActionResponses(unittest.TestCase):
     """Sources that answer an action instead of publishing an attribute."""
@@ -193,12 +184,6 @@ class TestActionResponses(unittest.TestCase):
         self.assertEqual(slots[0].start, datetime(2026, 11, 21, 0, 0, tzinfo=CET))
         self.assertAlmostEqual(slots[0].price, 0.17962)
         self.assertEqual(slots, sorted(slots, key=lambda s: s.start))
-
-    def test_easyenergy_reads_timestamp(self):
-        """It has no start key at all, so the timestamp one has to be right."""
-        slots = slots_from_response(EASYENERGY_RESPONSE, PRESETS[PRESET_EASYENERGY])
-        self.assertEqual(len(slots), 2)
-        self.assertAlmostEqual(slots[1].price, 0.08201)
 
     def test_quarter_hour_cadence_survives(self):
         slots = slots_from_response(ENERGYZERO_RESPONSE, PRESETS[PRESET_ENERGYZERO])
@@ -217,20 +202,6 @@ class TestActionResponses(unittest.TestCase):
     def test_attribute_source_cannot_read_a_response(self):
         with self.assertRaises(PriceReadError):
             slots_from_response(ENERGYZERO_RESPONSE, PRESETS[PRESET_ENTSOE])
-
-    def test_per_mwh_source_is_scaled(self):
-        """Nord Pool quotes per MWh; a source like that must come out per kWh."""
-        shape = PriceShape(
-            attribute="",
-            time_key="start",
-            value_key="price",
-            label="per MWh",
-            tested=False,
-            action=ActionSpec(domain="x", service="y", scale=0.001),
-        )
-        response = {"prices": [{"start": "2026-11-21 00:00:00+01:00", "price": 179.62}]}
-        slots = slots_from_response(response, shape)
-        self.assertAlmostEqual(slots[0].price, 0.17962)
 
     def test_action_preset_ignores_generic_overrides(self):
         """A stale attribute override must not corrupt an action source."""

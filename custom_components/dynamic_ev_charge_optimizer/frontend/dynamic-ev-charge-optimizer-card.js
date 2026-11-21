@@ -306,8 +306,8 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
   }
 
   /* The currency comes from Home Assistant's own setting rather than a euro sign
-     baked into the card: a Nord Pool user is billed in kroner, and a card that
-     insists on euros is simply wrong for them. */
+     baked into the card: plenty of people are billed in something else, and a card
+     that insists on euros is simply wrong for them. */
   _money(v, digits) {
     if (v === null || v === undefined || isNaN(v)) return "–";
     const currency = this._hass?.config?.currency || "EUR";

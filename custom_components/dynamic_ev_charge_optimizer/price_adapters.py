@@ -7,16 +7,16 @@ in two ways rather than one.
 Some publish the list as an attribute on a sensor. ENTSO-e does this, and it is
 the easy case: read the attribute, map two key names, done.
 
-The integrations built into Home Assistant do not. Nord Pool, EnergyZero,
-easyEnergy and Zonneplan all keep their sensors to the current price, the next
-price and the day's extremes; the full list is only available by calling an
-action that returns response data. An adapter that can only read attributes
-therefore cannot use any of them, which is why this module knows about both.
+The integrations built into Home Assistant do not. Their sensors carry only the
+current price and the day's extremes; the full list is only available by calling
+an action that returns response data. An adapter that could read attributes alone
+would be unable to use any of them, which is why this module knows about both.
 
-Only the ENTSO-e adapter has been exercised against a live instance. The action
-specs are taken from the action implementations in Home Assistant core rather
-than from documentation, which is a step better than guessing but still not the
-same as having seen one answer.
+Every preset here has been run against a live instance. That is a deliberately
+short list: shipping presets built from documentation alone produced two that
+were quietly wrong, which cost a user an evening of debugging. Anything not
+verified belongs behind the generic adapter, where the user supplies the names
+and knows they are doing so.
 """
 
 from __future__ import annotations
@@ -29,8 +29,6 @@ from .planner import Slot
 
 PRESET_ENTSOE = "entsoe"
 PRESET_ENERGYZERO = "energyzero"
-PRESET_EASYENERGY = "easyenergy"
-PRESET_NORDPOOL_HACS = "nordpool_hacs"
 PRESET_GENERIC = "generic"
 
 
@@ -53,8 +51,6 @@ class ActionSpec:
     #: Names of the start and end parameters, or None when the action takes neither.
     start_param: str | None = "start"
     end_param: str | None = "end"
-    #: Multiplied into every price. Sources quoting per MWh need 0.001.
-    scale: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -65,7 +61,6 @@ class PriceShape:
     time_key: str
     value_key: str
     label: str
-    tested: bool
     #: Set when the source answers an action instead of publishing an attribute.
     action: ActionSpec | None = None
 
@@ -82,55 +77,29 @@ PRESETS: dict[str, PriceShape] = {
         time_key="time",
         value_key="price",
         label="ENTSO-e (HACS)",
-        tested=True,
     ),
-    # Core integration. Its action serialises each period as
+    # Core integration. Verified live 2026-11-21: 192 quarter-hourly periods for
+    # today and tomorrow. Its action serialises each period as
     # {"price": .., "timestamp": .., "start": .., "end": ..}; `start` is used
     # because `timestamp` is documented as a duplicate of it and could drift.
-    # Taken from homeassistant/components/energyzero/services.py.
     PRESET_ENERGYZERO: PriceShape(
         attribute="",
         time_key="start",
         value_key="price",
         label="EnergyZero (built in)",
-        tested=False,
         action=ActionSpec(
             domain="energyzero",
             service="get_energy_prices",
             data={"incl_vat": False, "price_type": "market", "interval": "quarter"},
         ),
     ),
-    # Core integration. Its action answers {"prices": [{"timestamp": .., "price": ..}]}
-    # with no start/end, so the period length is derived from the cadence as usual.
-    PRESET_EASYENERGY: PriceShape(
-        attribute="",
-        time_key="timestamp",
-        value_key="price",
-        label="easyEnergy (built in)",
-        tested=False,
-        action=ActionSpec(
-            domain="easyenergy",
-            service="get_energy_usage_prices",
-            data={"incl_vat": False, "granularity": "quarter", "price_type": "market"},
-        ),
-    ),
-    # The custom integration, not the one built into Home Assistant: this is the
-    # one that publishes raw_today. The built-in Nord Pool keeps its list behind
-    # an action whose response is keyed by bidding area, which does not fit the
-    # shape below and is not supported yet.
-    PRESET_NORDPOOL_HACS: PriceShape(
-        attribute="raw_today",
-        time_key="start",
-        value_key="value",
-        label="Nord Pool (HACS custom integration)",
-        tested=False,
-    ),
+    # Not a claim about any integration: the user names the attribute and the keys,
+    # so nothing here can be quietly wrong on their behalf.
     PRESET_GENERIC: PriceShape(
         attribute="prices",
         time_key="time",
         value_key="price",
         label="Other (name the attribute yourself)",
-        tested=False,
     ),
 }
 
@@ -175,7 +144,6 @@ def slots_from_entries(raw: Any, shape: PriceShape, *, where: str) -> list[Slot]
     if not isinstance(raw, (list, tuple)):
         raise PriceReadError(f"{where} is not a list of prices")
 
-    scale = shape.action.scale if shape.action else 1.0
     seen: dict[datetime, float] = {}
     for entry in raw:
         if not isinstance(entry, dict):
@@ -184,7 +152,7 @@ def slots_from_entries(raw: Any, shape: PriceShape, *, where: str) -> list[Slot]
             continue
         try:
             start = parse_timestamp(entry[shape.time_key])
-            price = float(entry[shape.value_key]) * scale
+            price = float(entry[shape.value_key])
         except (PriceReadError, TypeError, ValueError):
             continue
         # Later entries win, which is what you want when a source republishes a
@@ -260,5 +228,4 @@ def shape_from_config(config: dict[str, Any]) -> PriceShape:
         time_key=config.get(CONF_PRICE_TIME_KEY) or base.time_key,
         value_key=config.get(CONF_PRICE_VALUE_KEY) or base.value_key,
         label=base.label,
-        tested=base.tested,
     )
