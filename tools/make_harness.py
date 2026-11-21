@@ -63,7 +63,7 @@ def build_period(prices: list[dict], i0: int, i1: int) -> dict:
     }
 
 
-def build_states() -> dict:
+def build_states(car: bool = True) -> dict:
     prices = build_prices()
     periods = [
         build_period(prices, 42, 46),
@@ -77,7 +77,7 @@ def build_states() -> dict:
     def st(state, attrs=None):
         return {"state": state, "attributes": attrs or {}}
 
-    return {
+    states = {
         "sensor.evcp_prices_known_until": st(
             horizon, {"prices": prices, "slot_minutes": SLOT_MINUTES}
         ),
@@ -103,6 +103,16 @@ def build_states() -> dict:
         "button.evcp_use_measured_charging_power": st("unknown"),
         "switch.evcp_charge_immediately": st("off"),
     }
+    if not car:
+        # No car linked: the level sensor and the refresh button are never created,
+        # and the card has to cope with both being absent.
+        states.pop("sensor.evcp_car_charge_level", None)
+        states.pop("button.evcp_refresh_car", None)
+        # With no car the integration cannot work out what is needed, so it
+        # reports zero. Leaving the stub at 34.3 made the card look better here
+        # than it ever does in reality.
+        states["sensor.evcp_energy_needed"] = st(0)
+    return states
 
 
 PAGE = """<!doctype html>
@@ -168,6 +178,21 @@ def main() -> None:
             encoding="utf-8",
         )
         print(f"wrote {path.relative_to(ROOT)}")
+
+    # The no-car page: the percentage field has nothing to work from and must be
+    # disabled rather than quietly useless.
+    nocar = OUT / "harness-nocar.html"
+    nocar.write_text(
+        PAGE
+        % {
+            "lang": "en",
+            "currency": "EUR",
+            "card": card,
+            "states": json.dumps(build_states(car=False)),
+        },
+        encoding="utf-8",
+    )
+    print(f"wrote {nocar.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

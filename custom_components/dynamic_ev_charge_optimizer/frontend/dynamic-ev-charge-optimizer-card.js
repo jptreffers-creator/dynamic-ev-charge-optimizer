@@ -135,6 +135,10 @@ const STRINGS = {
     thAvgPrice: "Avg. price",
     thStart: "Start",
     thPricePerKwh: "Price/kWh",
+    socDisabled:
+      "No car is linked, so a percentage means nothing here. Enter a number of "
+      + "kWh instead.",
+    hintNoCar: "No car linked. Enter how many kWh you want to add.",
     dashTitle: "Charge planner",
     dashNotFound:
       "The Dynamic EV Charge Optimizer integration was not found. Set it up under " +
@@ -229,6 +233,10 @@ const STRINGS = {
     thAvgPrice: "Gem. prijs",
     thStart: "Start",
     thPricePerKwh: "Prijs/kWh",
+    socDisabled:
+      "Er is geen auto gekoppeld, dus een percentage zegt hier niets. Vul in "
+      + "plaats daarvan een aantal kWh in.",
+    hintNoCar: "Geen auto gekoppeld. Vul in hoeveel kWh je wilt laden.",
     dashTitle: "Laadplanner",
     dashNotFound:
       "De integratie Dynamic EV Charge Optimizer is niet gevonden. Stel hem eerst in " +
@@ -444,6 +452,8 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
            it: Norwegian renders "man. kl. 10:30" where Dutch gets "ma 10:30".
            The wrapper keeps that inside the card instead of stretching the
            dashboard, and nowrap stops a date breaking across three lines. */
+        .dimmed { opacity:.45; }
+        input:disabled { opacity:.45; cursor:not-allowed; }
         .tablewrap { overflow-x:auto; }
         table { width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:.86rem; }
         td:first-child, td:nth-child(2) { white-space:nowrap; }
@@ -464,9 +474,10 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
 
         <div class="row">
           <span class="now" id="carnow"></span>
-          <label for="soc">${t.chargeTo}</label>
-          <input type="number" id="soc" min="10" max="100" step="5" inputmode="numeric">
-          <span class="unit">%</span>
+          <label for="soc" id="soclabel">${t.chargeTo}</label>
+          <input type="number" id="soc" min="10" max="100" step="5" inputmode="numeric"
+                 aria-describedby="hint">
+          <span class="unit" id="socunit">%</span>
           <label for="kwh">${t.orFixed}</label>
           <input type="number" id="kwh" min="0" max="200" step="0.5" inputmode="decimal">
           <span class="unit">kWh</span>
@@ -502,7 +513,7 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
     this._el = {};
     for (const id of ["sub","svg","axis","legend","soc","kwh","deadline","hint","start",
                       "stop","now","warnbox","planline","timeline","periods","sugline",
-                      "sugtimeline","slots","live","carnow"]) {
+                      "sugtimeline","slots","live","carnow","soclabel","socunit"]) {
       this._el[id] = this.shadowRoot.getElementById(id);
     }
 
@@ -688,6 +699,24 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
     const stale = carState?.attributes?.stale === true;
     const lastSeen = carState?.attributes?.last_updated;
 
+    /* Without a car there is no current level, so a target percentage cannot be
+       turned into kilowatt-hours and the field would be a trap. Disabled rather
+       than hidden: the layout stays put, and a screen reader announces it as
+       unavailable and reads the hint that says what to do instead.
+
+       Keyed on whether the entity exists, not on whether it has a value: a car
+       whose reading is momentarily unavailable is still a car, and that field
+       should come back by itself. */
+    const carConfigured = Boolean(carState);
+    this._el.soc.disabled = !carConfigured;
+    this._el.soclabel.classList.toggle("dimmed", !carConfigured);
+    this._el.socunit.classList.toggle("dimmed", !carConfigured);
+    if (carConfigured) {
+      this._el.soc.removeAttribute("title");
+    } else {
+      this._el.soc.title = t.socDisabled;
+    }
+
     if (car === null) {
       this._el.carnow.textContent = "";
       this._el.carnow.classList.remove("stale");
@@ -704,6 +733,8 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
     this._el.hint.textContent =
       override > 0
         ? t.hintFixed(override.toFixed(1))
+        : !carConfigured
+        ? t.hintNoCar
         : car !== null && needed
         ? t.hintFromTo(car, soc ?? "?", needed.toFixed(1), age)
         : car !== null
