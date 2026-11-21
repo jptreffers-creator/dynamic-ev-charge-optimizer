@@ -56,8 +56,63 @@ async def _async_register_card(hass: HomeAssistant) -> None:
         [StaticPathConfig(CARD_PATH, str(source), cache_headers=False)]
     )
     integration = await async_get_integration(hass, DOMAIN)
-    add_extra_js_url(hass, f"{CARD_PATH}?v={integration.version}")
+    versioned = f"{CARD_PATH}?v={integration.version}"
+    add_extra_js_url(hass, versioned)
+    await _async_register_resource(hass, versioned)
     _LOGGER.debug("Registered planner card at %s", CARD_PATH)
+
+
+async def _async_register_resource(hass: HomeAssistant, url: str) -> None:
+    """Also register the card as a Lovelace resource.
+
+    add_extra_js_url is enough to load the card, but not enough for the dashboard
+    strategy: the "Add dashboard" dialog only sees strategies whose module was
+    registered as a resource. That is not documented anywhere -- it was found by
+    the strategy failing to appear until the resource was added by hand.
+
+    This reaches into Lovelace's own collection, which is not public API, so every
+    step is guarded and a failure only costs the one-click dashboard: the card and
+    the integration work regardless. Looked up by plain key rather than imported,
+    so a reshuffle inside Home Assistant cannot stop the integration loading.
+    """
+    manual = (
+        "Add it by hand under Settings > Dashboards > Resources, as a JavaScript "
+        "module pointing at %s, if you want the ready-made dashboard"
+    )
+    try:
+        data = hass.data.get("lovelace")
+        resources = getattr(data, "resources", None)
+        if resources is None:
+            _LOGGER.debug("Lovelace is not set up; skipping resource registration")
+            return
+        if getattr(data, "resource_mode", None) != "storage":
+            # Resources come from configuration.yaml here and are read-only.
+            _LOGGER.info("Lovelace resources are in YAML mode. " + manual, url)
+            return
+
+        # Touching the collection loads it; async_items() is empty until it has.
+        await resources.async_get_info()
+        items = list(resources.async_items() or [])
+        ours = [
+            item
+            for item in items
+            if str(item.get("url", "")).split("?")[0] == CARD_PATH
+        ]
+
+        if not ours:
+            await resources.async_create_item({"res_type": "module", "url": url})
+            _LOGGER.info("Registered the card as a Lovelace resource at %s", url)
+        elif ours[0].get("url") != url:
+            # Keep exactly one, pointing at the current version, so an upgrade does
+            # not leave a stale copy that the browser happily keeps serving.
+            await resources.async_update_item(ours[0]["id"], {"url": url})
+            _LOGGER.info("Updated the Lovelace resource to %s", url)
+    except Exception as err:  # noqa: BLE001 - never block setup over a nicety
+        _LOGGER.warning(
+            "Could not register the card as a Lovelace resource (%s). " + manual,
+            err,
+            url,
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

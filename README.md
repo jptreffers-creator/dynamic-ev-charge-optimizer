@@ -147,6 +147,19 @@ This needs Home Assistant 2026.5 or newer, which is when dashboard strategies
 arrived. On anything older, copy [docs/example-dashboard.yaml](docs/example-dashboard.yaml)
 and replace the handful of lines marked `REPLACE` with your own entities.
 
+If **EV charge planner** is not in that dialog, reload the page with Ctrl+Shift+R
+first. The dialog only sees strategies whose module is registered as a Lovelace
+*resource*, and this integration registers its own on startup — but if that failed,
+the log says so. You can then add it by hand under *Settings → Dashboards →
+Resources* (that menu needs Advanced Mode on your profile), as a **JavaScript
+module** pointing at:
+
+    /dynamic_ev_charge_optimizer/dynamic-ev-charge-optimizer-card.js
+
+Being loaded as an extra frontend module, which is how the card itself gets in, is
+enough to render the card but not enough for the dialog to find the strategy. That
+is not written down anywhere; it was found the hard way.
+
 Then: set how full you want the car, or a fixed number of kWh, set when it should be
 ready, and press **Schema laden**. The planner books the cheapest periods and charges
 there. **Stop** clears the schedule and switches off.
