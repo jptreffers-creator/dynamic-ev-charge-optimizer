@@ -101,6 +101,7 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
         #: Last answer from an action-based price source, and when it came.
         self._price_action_slots: list = []
         self._price_action_at: datetime | None = None
+        self._logged_prices: bool = False
         #: Charge now regardless of price. Persisted, because a restart that
         #: silently stopped an override would look like the charger failing.
         self.charge_now_override: bool = False
@@ -177,14 +178,39 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
             else:
                 slots = self._slots_from_attribute(shape)
         except price_adapters.PriceReadError as err:
-            self.price_error = str(err)
+            # Logged on the transition only. The pass runs every minute, and a
+            # source that is down stays down for hours; a line a minute would bury
+            # the one that matters.
+            message = str(err)
+            if message != self.price_error:
+                _LOGGER.warning("Cannot read prices from %s: %s", shape.label, message)
+            self.price_error = message
             return self.slots
+
+        if self.price_error is not None:
+            _LOGGER.info("Prices from %s are readable again", shape.label)
         self.price_error = None
-        return price_adapters.adjust(
+
+        adjusted = price_adapters.adjust(
             slots,
             surcharge=float(self.settings.get(CONF_PRICE_SURCHARGE, 0.0) or 0.0),
             vat_percent=float(self.settings.get(CONF_PRICE_VAT, 0.0) or 0.0),
         )
+        # One line after every restart saying what actually arrived. Silence used to
+        # mean either "working" or "quietly broken", and telling those apart meant
+        # asking someone to look at the dashboard.
+        if not self._logged_prices:
+            self._logged_prices = True
+            _LOGGER.info(
+                "Read %d price periods from %s, %s through %s, %.4f to %.4f per kWh",
+                len(adjusted),
+                shape.label,
+                adjusted[0].start.isoformat(),
+                adjusted[-1].start.isoformat(),
+                min(slot.price for slot in adjusted),
+                max(slot.price for slot in adjusted),
+            )
+        return adjusted
 
     def _slots_from_attribute(self, shape) -> list:
         entity = self._state(CONF_PRICE_ENTITY)
