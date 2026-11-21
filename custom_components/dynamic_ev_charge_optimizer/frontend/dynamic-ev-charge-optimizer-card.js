@@ -31,7 +31,33 @@ const SUFFIXES = {
   stop: ["button", "stop"],
   adopt: ["button", "use_measured_charging_power"],
   now: ["switch", "charge_immediately"],
+  wiring: ["sensor", "wiring"],
 };
+
+/* The card reads this through an instance; the strategy is static and gets hass
+   handed to it, so the lookup lives at module level and both use the same one. */
+const stringsFor = (hass) => {
+  const raw = hass?.locale?.language || hass?.language || "en";
+  const lang = String(raw).slice(0, 2).toLowerCase();
+  return { ...STRINGS.en, ...(STRINGS[lang] || {}) };
+};
+
+/* The planner publishes one entity whose name is predictable, and everything else
+   is derived from it. That is what lets a shared dashboard work on someone else's
+   installation without a single entity id being typed. */
+const prefixFrom = (hass) =>
+  Object.keys(hass?.states || {})
+    .map((id) => id.match(/^sensor\.(.+)_prices_known_until$/))
+    .filter(Boolean)
+    .map((m) => m[1])[0];
+
+const idsFrom = (prefix) =>
+  Object.fromEntries(
+    Object.entries(SUFFIXES).map(([key, [domain, suffix]]) => [
+      key,
+      `${domain}.${prefix}_${suffix}`,
+    ])
+  );
 
 const num = (state) => {
   const v = Number(state?.state);
@@ -109,6 +135,33 @@ const STRINGS = {
     thAvgPrice: "Avg. price",
     thStart: "Start",
     thPricePerKwh: "Price/kWh",
+    dashTitle: "Charge planner",
+    dashNotFound:
+      "The Dynamic EV Charge Optimizer integration was not found. Set it up under " +
+      "Settings \u2192 Devices & services first; this dashboard builds itself from it.",
+    viewPlanner: "Planner",
+    viewDetails: "Details",
+    viewSettings: "Settings",
+    cardStatus: "Status",
+    cardCharger: "Charger",
+    cardCar: "Car",
+    cardPlan: "Plan and cost",
+    cardSettings: "Charging settings",
+    cardCalibration: "Calibration",
+    cardPrices: "Prices",
+    dashHelp:
+      "**How it works.** Say how much you want charged and when it has to be ready, " +
+      "then press **Charge on schedule**. The planner picks the cheapest periods and " +
+      "switches the charger on and off at those moments. **Charge now** ignores the " +
+      "schedule and the price. **Stop** clears the schedule and switches off.\n\n" +
+      "With no schedule the planner does not touch the charger at all, so you can " +
+      "always charge by hand.\n\n" +
+      "Surcharge and VAT turn the market price into what you actually pay. They " +
+      "cannot change which periods are cheapest.",
+    strategyName: "EV charge planner",
+    strategyDescription:
+      "A ready-made dashboard for the Dynamic EV Charge Optimizer, built from " +
+      "whatever you configured.",
   },
 
   nl: {
@@ -176,6 +229,34 @@ const STRINGS = {
     thAvgPrice: "Gem. prijs",
     thStart: "Start",
     thPricePerKwh: "Prijs/kWh",
+    dashTitle: "Laadplanner",
+    dashNotFound:
+      "De integratie Dynamic EV Charge Optimizer is niet gevonden. Stel hem eerst in " +
+      "onder Instellingen \u2192 Apparaten en diensten; dit dashboard bouwt zichzelf " +
+      "daaruit op.",
+    viewPlanner: "Planner",
+    viewDetails: "Details",
+    viewSettings: "Instellingen",
+    cardStatus: "Status",
+    cardCharger: "Laadpaal",
+    cardCar: "Auto",
+    cardPlan: "Plan en kosten",
+    cardSettings: "Laadinstellingen",
+    cardCalibration: "IJken",
+    cardPrices: "Prijzen",
+    dashHelp:
+      "**Hoe het werkt.** Vul in hoeveel je wilt laden en wanneer het klaar moet " +
+      "zijn, en druk op **Schema laden**. De planner kiest de goedkoopste periodes en " +
+      "schakelt de laadpaal daar aan en uit. **Laad nu** negeert het schema en de " +
+      "prijs. **Stop** wist het schema en zet uit.\n\n" +
+      "Zolang er geen schema staat, raakt de planner de laadpaal niet aan en kun je " +
+      "hem volledig met de hand bedienen.\n\n" +
+      "Opslag en BTW maken van de marktprijs wat je werkelijk betaalt. Ze kunnen " +
+      "niet veranderen welke periodes het goedkoopst zijn.",
+    strategyName: "EV-laadplanner",
+    strategyDescription:
+      "Een kant-en-klaar dashboard voor de Dynamic EV Charge Optimizer, opgebouwd " +
+      "uit wat je hebt ingesteld.",
   },
 };
 
@@ -206,7 +287,7 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
   /* English underneath, the chosen language on top, so a partial translation
      still renders a complete card. */
   _t() {
-    return { ...STRINGS.en, ...(STRINGS[this._lang()] || {}) };
+    return stringsFor(this._hass);
   }
 
   _time(d) {
@@ -730,6 +811,142 @@ class DynamicEvChargeOptimizerCard extends HTMLElement {
 
 if (!customElements.get("dynamic-ev-charge-optimizer-card")) {
   customElements.define("dynamic-ev-charge-optimizer-card", DynamicEvChargeOptimizerCard);
+}
+
+
+/* ---------- dashboard strategy ----------
+
+   A dashboard that builds itself. Home Assistant has no way for an integration to
+   register a dashboard from Python, but since 2026.5 the frontend can ask a
+   strategy to generate one at load time. That is the difference between handing
+   someone a block of YAML full of entity ids they have to translate to their own
+   installation, and them picking an entry from a list.
+
+   Everything is derived at runtime: the planner's own entities from one predictable
+   name, and the charger and car from the wiring sensor, because those belong to
+   whichever integrations supplied them. Anything not configured is left out rather
+   than rendered as a broken row. */
+
+class DynamicEvChargeOptimizerStrategy extends HTMLElement {
+  static async generate(config, hass) {
+    const t = stringsFor(hass);
+    const prefix = config?.prefix || prefixFrom(hass);
+
+    if (!prefix) {
+      return {
+        title: t.dashTitle,
+        views: [
+          {
+            title: t.dashTitle,
+            cards: [{ type: "markdown", content: t.dashNotFound }],
+          },
+        ],
+      };
+    }
+
+    const ids = idsFrom(prefix);
+    const wiring = hass?.states?.[ids.wiring]?.attributes || {};
+    const exists = (id) => Boolean(id) && Boolean(hass?.states?.[id]);
+
+    /* Null when nothing in it exists, so an installation without a car or without
+       charger sensors gets a shorter dashboard instead of empty cards. */
+    const entities = (title, list) => {
+      const kept = list.filter(exists);
+      if (!kept.length) return null;
+      return {
+        type: "entities",
+        title,
+        show_header_toggle: false,
+        entities: kept.map((entity) => ({ entity })),
+      };
+    };
+
+    const planner = {
+      title: t.viewPlanner,
+      path: "planner",
+      icon: "mdi:calendar-clock",
+      cards: [
+        { type: "custom:dynamic-ev-charge-optimizer-card" },
+        entities(t.cardStatus, [
+          ids.chargeNow,
+          wiring.charger_switch,
+          wiring.charger_power,
+          ids.planPeriods,
+          ids.suggestedPeriods,
+          ids.carRefresh || wiring.car_refresh,
+        ]),
+      ].filter(Boolean),
+    };
+
+    const details = {
+      title: t.viewDetails,
+      path: "details",
+      icon: "mdi:ev-station",
+      cards: [
+        entities(t.cardCharger, [
+          wiring.charger_switch,
+          wiring.charger_power,
+          wiring.session_energy,
+        ]),
+        entities(t.cardCar, [
+          ids.carLevel,
+          wiring.car_soc,
+          ids.energyNeeded,
+          wiring.car_last_fetch,
+        ]),
+        entities(t.cardPlan, [
+          ids.planCost,
+          ids.planEnergy,
+          ids.planAvg,
+          ids.suggestedCost,
+          ids.horizon,
+        ]),
+        entities(t.cardPrices, [wiring.price_entity, ids.wiring]),
+      ].filter(Boolean),
+    };
+
+    const settings = {
+      title: t.viewSettings,
+      path: "settings",
+      icon: "mdi:cog",
+      cards: [
+        entities(t.cardSettings, [
+          ids.power,
+          ids.capacity,
+          ids.surcharge,
+          ids.vat,
+        ]),
+        entities(t.cardCalibration, [ids.measuredPower, ids.adopt]),
+        { type: "markdown", content: t.dashHelp },
+      ].filter(Boolean),
+    };
+
+    return {
+      title: t.dashTitle,
+      views: [planner, details, settings].filter((v) => v.cards.length),
+    };
+  }
+}
+
+if (!customElements.get("ll-strategy-dashboard-dynamic-ev-charge-optimizer")) {
+  customElements.define(
+    "ll-strategy-dashboard-dynamic-ev-charge-optimizer",
+    DynamicEvChargeOptimizerStrategy
+  );
+}
+
+window.customStrategies = window.customStrategies || [];
+if (
+  !window.customStrategies.some((s) => s.type === "dynamic-ev-charge-optimizer")
+) {
+  window.customStrategies.push({
+    type: "dynamic-ev-charge-optimizer",
+    strategyType: "dashboard",
+    name: STRINGS.en.strategyName,
+    description: STRINGS.en.strategyDescription,
+    documentationURL:
+      "https://github.com/jptreffers-creator/dynamic-ev-charge-optimizer",
+  });
 }
 
 window.customCards = window.customCards || [];

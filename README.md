@@ -130,6 +130,23 @@ type: custom:dynamic-ev-charge-optimizer-card
 No options needed; it finds its own entities. If you run more than one planner, give
 each card a `prefix:` matching its entity names.
 
+### A whole dashboard, without typing entity ids
+
+*Settings → Dashboards → Add dashboard*, then **EV charge planner** under *Community
+dashboards*. That builds a three-view dashboard — the planner, the details, the
+settings — from whatever you have configured, in your own language, and it leaves out
+what does not apply: no car linked means no car rows.
+
+Nothing in it is typed by hand. The planner's own entities are named identically on
+every installation, so they are derived from one predictable name; your charger, car
+and price integration are read from `sensor.*_wiring`, a diagnostic entity that
+reports what this planner is pointed at. That is also the first place to look when
+something is not working.
+
+This needs Home Assistant 2026.5 or newer, which is when dashboard strategies
+arrived. On anything older, copy [docs/example-dashboard.yaml](docs/example-dashboard.yaml)
+and replace the handful of lines marked `REPLACE` with your own entities.
+
 Then: set how full you want the car, or a fixed number of kWh, set when it should be
 ready, and press **Schema laden**. The planner books the cheapest periods and charges
 there. **Stop** clears the schedule and switches off.

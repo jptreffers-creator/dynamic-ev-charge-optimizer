@@ -1,0 +1,110 @@
+# A dashboard for the Dynamic EV Charge Optimizer.
+#
+# Prefer the dashboard strategy if you can: Settings -> Dashboards -> Add
+# dashboard -> "EV charge planner", under Community dashboards. It builds this
+# same thing from whatever you have configured, with nothing to fill in, and it
+# leaves out the parts that do not apply to you.
+#
+# This file is for people on Home Assistant older than 2026.5, and for anyone who
+# would rather own the YAML. Save it as dashboards/ev-charging.yaml and add:
+#
+#   lovelace:
+#     dashboards:
+#       ev-charging:
+#         mode: yaml
+#         filename: dashboards/ev-charging.yaml
+#         title: Charge planner
+#         icon: mdi:ev-station
+#         show_in_sidebar: true
+#
+# Every dynamic_ev_charge_optimizer entity below is named the same on every
+# installation, so those lines need no editing. The lines marked REPLACE point at
+# your own charger, car and price integration, which only you can name. Delete the
+# ones you do not have rather than leaving them: a row pointing at an entity that
+# does not exist renders as "Entity not found".
+
+views:
+  - title: Planner
+    path: planner
+    icon: mdi:calendar-clock
+    cards:
+      - type: custom:dynamic-ev-charge-optimizer-card
+
+      - type: entities
+        title: Status
+        show_header_toggle: false
+        entities:
+          - entity: binary_sensor.dynamic_ev_charge_optimizer_charge_now
+          - entity: switch.my_charger                       # REPLACE: your charger
+          - entity: sensor.my_charger_power                 # REPLACE, or delete
+          - entity: sensor.dynamic_ev_charge_optimizer_plan_periods
+          - entity: sensor.dynamic_ev_charge_optimizer_suggested_periods
+          - entity: button.dynamic_ev_charge_optimizer_refresh_car   # delete if no car
+
+  - title: Details
+    path: details
+    icon: mdi:ev-station
+    cards:
+      - type: entities
+        title: Charger
+        state_color: true
+        entities:
+          - entity: switch.my_charger                       # REPLACE
+          - entity: sensor.my_charger_power                 # REPLACE, or delete
+          - entity: sensor.my_charger_session_energy        # REPLACE, or delete
+
+      - type: entities
+        title: Car
+        entities:
+          - entity: sensor.dynamic_ev_charge_optimizer_car_charge_level  # delete if no car
+          - entity: sensor.my_car_battery_level             # REPLACE, or delete
+          - entity: sensor.dynamic_ev_charge_optimizer_energy_needed
+
+      - type: entities
+        title: Plan and cost
+        entities:
+          - entity: sensor.dynamic_ev_charge_optimizer_plan_cost
+          - entity: sensor.dynamic_ev_charge_optimizer_plan_energy
+          - entity: sensor.dynamic_ev_charge_optimizer_plan_average_price
+          - entity: sensor.dynamic_ev_charge_optimizer_suggested_cost
+          - entity: sensor.dynamic_ev_charge_optimizer_prices_known_until
+
+      - type: entities
+        title: Prices
+        entities:
+          - entity: sensor.dynamic_ev_charge_optimizer_wiring
+          - entity: sensor.my_price_sensor                  # REPLACE, or delete
+
+  - title: Settings
+    path: settings
+    icon: mdi:cog
+    cards:
+      - type: entities
+        title: Charging settings
+        show_header_toggle: false
+        entities:
+          # Target level, fixed kWh and the deadline are on the planner card
+          # itself, not here.
+          - entity: number.dynamic_ev_charge_optimizer_charging_power
+          - entity: number.dynamic_ev_charge_optimizer_car_battery_capacity
+          - entity: number.dynamic_ev_charge_optimizer_price_surcharge_per_kwh
+          - entity: number.dynamic_ev_charge_optimizer_vat_on_electricity
+
+      - type: entities
+        title: Calibration
+        show_header_toggle: false
+        entities:
+          - entity: sensor.dynamic_ev_charge_optimizer_measured_charging_power
+          - entity: button.dynamic_ev_charge_optimizer_use_measured_charging_power
+
+      - type: markdown
+        content: >
+          **How it works.** Say how much you want charged and when it has to be
+          ready, then press **Charge on schedule**. The planner picks the cheapest
+          periods and switches the charger on and off at those moments. **Charge
+          now** ignores the schedule and the price. **Stop** clears the schedule
+          and switches off.
+
+
+          With no schedule the planner does not touch the charger at all, so you
+          can always charge by hand.

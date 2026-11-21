@@ -14,12 +14,23 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfEnergy, UnitOfPower
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
+from . import price_adapters
 from .car_adapters import PRESET_NONE
-from .const import CONF_CAR_PRESET
+from .const import (
+    CONF_CAR_LAST_FETCH_ENTITY,
+    CONF_CAR_PRESET,
+    CONF_CAR_REFRESH_BUTTON,
+    CONF_CAR_SOC_ENTITY,
+    CONF_CHARGER_POWER_SENSOR,
+    CONF_CHARGER_SWITCH,
+    CONF_PRICE_ENTITY,
+    CONF_SESSION_ENERGY_SENSOR,
+)
 from .coordinator import DynamicEvChargeOptimizerCoordinator
 from .entity import DynamicEvChargeOptimizerEntity
 from .planner import Plan, PlanPart
@@ -150,7 +161,49 @@ async def async_setup_entry(
     if entry.options.get(CONF_CAR_PRESET, PRESET_NONE) != PRESET_NONE:
         entities.append(CarChargeLevelSensor(coordinator))
 
+    entities.append(WiringSensor(coordinator))
     async_add_entities(entities)
+
+
+class WiringSensor(DynamicEvChargeOptimizerEntity, SensorEntity):
+    """What this planner is actually wired to.
+
+    Two jobs. It answers "what is it pointed at?" without opening the setup, which
+    is the first question whenever something is not working. And it lets the
+    dashboard strategy build a complete dashboard: the charger and the car belong
+    to whichever integrations supplied them, and their entity ids live in the
+    config entry, where the frontend cannot see them.
+    """
+
+    _attr_name = "Wiring"
+    _attr_icon = "mdi:transit-connection-variant"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: DynamicEvChargeOptimizerCoordinator) -> None:
+        super().__init__(coordinator, "wiring")
+
+    @property
+    def native_value(self) -> str:
+        shape = price_adapters.shape_from_config(dict(self.coordinator.entry.options))
+        return shape.label
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        options = self.coordinator.entry.options
+        # Only what is actually configured: a key with a None value would have the
+        # strategy build a card around an entity that does not exist.
+        keys = (
+            ("price_entity", CONF_PRICE_ENTITY),
+            ("charger_switch", CONF_CHARGER_SWITCH),
+            ("charger_power", CONF_CHARGER_POWER_SENSOR),
+            ("session_energy", CONF_SESSION_ENERGY_SENSOR),
+            ("car_soc", CONF_CAR_SOC_ENTITY),
+            ("car_refresh", CONF_CAR_REFRESH_BUTTON),
+            ("car_last_fetch", CONF_CAR_LAST_FETCH_ENTITY),
+        )
+        wiring = {name: options[key] for name, key in keys if options.get(key)}
+        wiring["price_error"] = self.coordinator.price_error
+        return wiring
 
 
 class CarChargeLevelSensor(DynamicEvChargeOptimizerEntity, SensorEntity):
