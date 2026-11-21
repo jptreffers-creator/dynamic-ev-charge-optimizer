@@ -46,6 +46,7 @@ from .const import (
     DEFAULT_PRICE_SURCHARGE,
     DEFAULT_PRICE_VAT,
     PRICE_ACTION_INTERVAL_MINUTES,
+    PRICE_STARTUP_GRACE_SECONDS,
     DEFAULT_STALE_HOURS,
     DEFAULT_TARGET_SOC,
     DOMAIN,
@@ -102,6 +103,10 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
         self._price_action_slots: list = []
         self._price_action_at: datetime | None = None
         self._logged_prices: bool = False
+        #: Last failure actually warned about. Kept apart from price_error so a
+        #: failure that is only whispered during startup still warns if it lasts.
+        self._warned_price_error: str | None = None
+        self._started_at = dt_util.utcnow()
         #: Charge now regardless of price. Persisted, because a restart that
         #: silently stopped an override would look like the charger failing.
         self.charge_now_override: bool = False
@@ -182,13 +187,26 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
             # source that is down stays down for hours; a line a minute would bury
             # the one that matters.
             message = str(err)
-            if message != self.price_error:
+            starting = (
+                dt_util.utcnow() - self._started_at
+            ).total_seconds() < PRICE_STARTUP_GRACE_SECONDS
+            if starting:
+                # Deliberately not recorded as warned: if this is still failing once
+                # the grace window closes, it gets the warning it deserves.
+                _LOGGER.debug(
+                    "Prices not available yet from %s while starting up: %s",
+                    shape.label,
+                    message,
+                )
+            elif message != self._warned_price_error:
                 _LOGGER.warning("Cannot read prices from %s: %s", shape.label, message)
+                self._warned_price_error = message
             self.price_error = message
             return self.slots
 
-        if self.price_error is not None:
+        if self._warned_price_error is not None:
             _LOGGER.info("Prices from %s are readable again", shape.label)
+        self._warned_price_error = None
         self.price_error = None
 
         adjusted = price_adapters.adjust(

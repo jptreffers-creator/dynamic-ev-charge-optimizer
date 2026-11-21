@@ -56,6 +56,12 @@ DEFAULT_PRICE_VAT: Final = 0.0
 # integration's action sixty times an hour would be rude and pointless.
 PRICE_ACTION_INTERVAL_MINUTES: Final = 15
 
+# Home Assistant brings integrations up in no guaranteed order, so the first
+# price read after a restart can land before the source integration has
+# registered its action. That is not a fault and must not look like one; within
+# this window a failure is noted at debug level and left to resolve itself.
+PRICE_STARTUP_GRACE_SECONDS: Final = 180
+
 # Refusing to poll the car more often than this is enforced in Python rather than
 # trusted to the frontend. Some cars keep their modem awake to answer, which drains
 # the 12V battery; a user who reloads the dashboard ten times must not cause ten
