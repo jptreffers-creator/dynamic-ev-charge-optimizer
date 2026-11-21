@@ -3,10 +3,9 @@
     "step": {
       "user": {
         "title": "Stroomprijzen",
-        "description": "Kies de integratie die je prijzen levert, en de sensor met de komende prijzen erin. De planner heeft toekomstige prijzen nodig, niet alleen de prijs van nu — meestal is dat de sensor met de gemiddelde prijs, want die houdt de hele dag in een attribuut.",
+        "description": "Kies de integratie die je prijzen levert. Sommige publiceren de hele dag als attribuut op een sensor; de integraties die in Home Assistant zelf zitten beantwoorden in plaats daarvan een actie. De volgende stap vraagt wat die bron nodig heeft.",
         "data": {
-          "price_preset": "Prijsintegratie",
-          "price_entity": "Prijssensor"
+          "price_preset": "Prijsintegratie"
         }
       },
       "price_keys": {
@@ -46,27 +45,43 @@
       },
       "defaults": {
         "title": "Standaardwaarden",
-        "description": "Beginwaarden. Je kunt ze daarna allemaal nog aanpassen, en de laadsnelheid kan later worden vervangen door de werkelijk gemeten snelheid.",
+        "description": "Beginwaarden. Je kunt ze daarna allemaal nog aanpassen, en de laadsnelheid kan later worden vervangen door de werkelijk gemeten snelheid. Opslag en BTW maken van de marktprijs wat je werkelijk betaalt: (prijs + opslag) × (1 + BTW). Laat beide op nul staan als je bron al all-in prijzen geeft. Geen van beide verandert welke periodes het goedkoopst zijn.",
         "data": {
           "charge_power_kw": "Laadvermogen",
           "battery_capacity_kwh": "Accucapaciteit auto",
           "target_soc": "Gewenst accuniveau",
-          "deadline_time": "Klaar om"
+          "deadline_time": "Klaar om",
+          "price_surcharge_per_kwh": "Opslag per kWh (energiebelasting en leverancierskosten)",
+          "price_vat_percent": "BTW-percentage"
+        }
+      },
+      "price_entity": {
+        "title": "Prijssensor",
+        "description": "De sensor met de komende prijzen. De planner heeft toekomstige prijzen nodig, niet alleen die van nu — meestal is dat de sensor met de gemiddelde prijs, die de hele dag in een attribuut bewaart.",
+        "data": {
+          "price_entity": "Prijssensor"
+        }
+      },
+      "price_source": {
+        "title": "Prijsbron",
+        "description": "Welke configuratie van die integratie bevraagd moet worden. De planner roept de actie hoogstens eens per kwartier aan, dus er wordt niets vaker opgehaald dan nodig.",
+        "data": {
+          "price_source_entry": "Bronintegratie"
         }
       }
     },
     "abort": {
-      "already_configured": "Die laadschakelaar wordt al door een andere planner aangestuurd."
+      "already_configured": "Die laadschakelaar wordt al door een andere planner aangestuurd.",
+      "source_not_installed": "De integratie {integration} is nog niet ingesteld. Voeg hem eerst toe onder Apparaten en diensten en kom dan hier terug."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Stroomprijzen",
-        "description": "Pas de prijsbron aan. Laat je alles staan en klik je door, dan kom je bij de volgende stappen.",
+        "description": "Kies de integratie die je prijzen levert. Sommige publiceren de hele dag als attribuut op een sensor; de integraties die in Home Assistant zelf zitten beantwoorden in plaats daarvan een actie. De volgende stap vraagt wat die bron nodig heeft.",
         "data": {
-          "price_preset": "Prijsintegratie",
-          "price_entity": "Prijssensor"
+          "price_preset": "Prijsintegratie"
         }
       },
       "price_keys": {
@@ -106,9 +121,29 @@
           "charge_power_kw": "Laadvermogen",
           "battery_capacity_kwh": "Accucapaciteit auto",
           "target_soc": "Gewenst accuniveau",
-          "deadline_time": "Klaar om"
+          "deadline_time": "Klaar om",
+          "price_surcharge_per_kwh": "Opslag per kWh (energiebelasting en leverancierskosten)",
+          "price_vat_percent": "BTW-percentage"
+        },
+        "description": "Opslag en BTW maken van de marktprijs wat je werkelijk betaalt: (prijs + opslag) × (1 + BTW). Laat beide op nul staan als je bron al all-in prijzen geeft. Geen van beide verandert welke periodes het goedkoopst zijn."
+      },
+      "price_entity": {
+        "title": "Prijssensor",
+        "description": "De sensor met de komende prijzen. De planner heeft toekomstige prijzen nodig, niet alleen die van nu — meestal is dat de sensor met de gemiddelde prijs, die de hele dag in een attribuut bewaart.",
+        "data": {
+          "price_entity": "Prijssensor"
+        }
+      },
+      "price_source": {
+        "title": "Prijsbron",
+        "description": "Welke configuratie van die integratie bevraagd moet worden. De planner roept de actie hoogstens eens per kwartier aan, dus er wordt niets vaker opgehaald dan nodig.",
+        "data": {
+          "price_source_entry": "Bronintegratie"
         }
       }
+    },
+    "abort": {
+      "source_not_installed": "De integratie {integration} is nog niet ingesteld. Voeg hem eerst toe onder Apparaten en diensten en kom dan hier terug."
     }
   },
   "services": {

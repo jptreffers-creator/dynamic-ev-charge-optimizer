@@ -3,10 +3,9 @@
     "step": {
       "user": {
         "title": "Electricity prices",
-        "description": "Pick the integration that supplies your prices, and the sensor that carries the upcoming ones. The planner needs future prices, not just the current one — usually that is the 'average price' sensor, which keeps the whole day in an attribute.",
+        "description": "Pick the integration that supplies your prices. Some publish the whole day as a sensor attribute; the ones built into Home Assistant answer an action instead. The next step asks for whichever that source needs.",
         "data": {
-          "price_preset": "Price integration",
-          "price_entity": "Price sensor"
+          "price_preset": "Price integration"
         }
       },
       "price_keys": {
@@ -46,27 +45,43 @@
       },
       "defaults": {
         "title": "Defaults",
-        "description": "Starting values. All of these stay adjustable afterwards, and the charging speed can be replaced later by the speed actually measured.",
+        "description": "Starting values. All of these stay adjustable afterwards, and the charging speed can be replaced later by the speed actually measured. Surcharge and VAT turn the market price into what you actually pay: (price + surcharge) × (1 + VAT). Leave both at zero if your source already quotes all-in prices. Neither changes which periods are cheapest.",
         "data": {
           "charge_power_kw": "Charging power",
           "battery_capacity_kwh": "Car battery capacity",
           "target_soc": "Target charge level",
-          "deadline_time": "Ready by"
+          "deadline_time": "Ready by",
+          "price_surcharge_per_kwh": "Surcharge per kWh (energy tax and supplier margin)",
+          "price_vat_percent": "VAT percentage"
+        }
+      },
+      "price_entity": {
+        "title": "Price sensor",
+        "description": "The sensor carrying the upcoming prices. The planner needs future prices, not just the current one — usually that is the 'average price' sensor, which keeps the whole day in an attribute.",
+        "data": {
+          "price_entity": "Price sensor"
+        }
+      },
+      "price_source": {
+        "title": "Price source",
+        "description": "Which configuration of that integration to ask. The planner calls its action every quarter of an hour at most, so nothing is polled harder than it needs to be.",
+        "data": {
+          "price_source_entry": "Source integration"
         }
       }
     },
     "abort": {
-      "already_configured": "That charging switch is already planned by another entry."
+      "already_configured": "That charging switch is already planned by another entry.",
+      "source_not_installed": "The {integration} integration is not set up yet. Add it first under Devices & services, then come back here."
     }
   },
   "options": {
     "step": {
       "init": {
         "title": "Electricity prices",
-        "description": "Change the price source. Leaving it as it is and clicking through gets you to the other steps.",
+        "description": "Pick the integration that supplies your prices. Some publish the whole day as a sensor attribute; the ones built into Home Assistant answer an action instead. The next step asks for whichever that source needs.",
         "data": {
-          "price_preset": "Price integration",
-          "price_entity": "Price sensor"
+          "price_preset": "Price integration"
         }
       },
       "price_keys": {
@@ -106,9 +121,29 @@
           "charge_power_kw": "Charging power",
           "battery_capacity_kwh": "Car battery capacity",
           "target_soc": "Target charge level",
-          "deadline_time": "Ready by"
+          "deadline_time": "Ready by",
+          "price_surcharge_per_kwh": "Surcharge per kWh (energy tax and supplier margin)",
+          "price_vat_percent": "VAT percentage"
+        },
+        "description": "Surcharge and VAT turn the market price into what you actually pay: (price + surcharge) × (1 + VAT). Leave both at zero if your source already quotes all-in prices. Neither changes which periods are cheapest."
+      },
+      "price_entity": {
+        "title": "Price sensor",
+        "description": "The sensor carrying the upcoming prices. The planner needs future prices, not just the current one — usually that is the 'average price' sensor, which keeps the whole day in an attribute.",
+        "data": {
+          "price_entity": "Price sensor"
+        }
+      },
+      "price_source": {
+        "title": "Price source",
+        "description": "Which configuration of that integration to ask. The planner calls its action every quarter of an hour at most, so nothing is polled harder than it needs to be.",
+        "data": {
+          "price_source_entry": "Source integration"
         }
       }
+    },
+    "abort": {
+      "source_not_installed": "The {integration} integration is not set up yet. Add it first under Devices & services, then come back here."
     }
   },
   "services": {

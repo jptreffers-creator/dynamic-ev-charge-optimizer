@@ -15,7 +15,13 @@ from homeassistant.const import PERCENTAGE, UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_BATTERY_CAPACITY, CONF_CHARGE_POWER, CONF_TARGET_SOC
+from .const import (
+    CONF_BATTERY_CAPACITY,
+    CONF_CHARGE_POWER,
+    CONF_PRICE_SURCHARGE,
+    CONF_PRICE_VAT,
+    CONF_TARGET_SOC,
+)
 from .coordinator import DynamicEvChargeOptimizerCoordinator
 from .entity import DynamicEvChargeOptimizerEntity
 
@@ -74,6 +80,32 @@ NUMBERS: tuple[PlannerNumberDescription, ...] = (
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         mode=NumberMode.BOX,
         icon="mdi:pencil",
+    ),
+    # Market price in, what you actually pay out: (price + surcharge) * (1 + VAT).
+    # Both default to zero, so a source that already quotes all-in prices needs
+    # neither touched. Neither can change which periods are cheapest.
+    PlannerNumberDescription(
+        key="price_surcharge",
+        name="Price surcharge per kWh",
+        setting=CONF_PRICE_SURCHARGE,
+        default=0.0,
+        native_min_value=0.0,
+        native_max_value=2.0,
+        native_step=0.001,
+        mode=NumberMode.BOX,
+        icon="mdi:cash-plus",
+    ),
+    PlannerNumberDescription(
+        key="price_vat",
+        name="VAT on electricity",
+        setting=CONF_PRICE_VAT,
+        default=0.0,
+        native_min_value=0.0,
+        native_max_value=50.0,
+        native_step=0.5,
+        native_unit_of_measurement=PERCENTAGE,
+        mode=NumberMode.BOX,
+        icon="mdi:percent",
     ),
 )
 

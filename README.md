@@ -37,18 +37,55 @@ needed from the actual charge level instead of you typing a number.
 
 ## Price sources
 
-| Source | Status |
-|---|---|
-| ENTSO-e | Verified against a live instance |
-| Nord Pool | Written from its documented attribute shape, untested |
-| EnergyZero | Written from its documented attribute shape, untested |
-| Anything else | Use **Other** and name the attribute and keys yourself |
+Price integrations publish the upcoming day in one of two ways, and this reads both.
+Some put the whole list in a sensor attribute. The ones built into Home Assistant do
+not: their sensors carry only the current price and the day's extremes, and the full
+list comes from an action that returns it. An adapter that could only read attributes
+would be unable to use any of them.
+
+| Source | Kind | Status |
+|---|---|---|
+| ENTSO-e (HACS) | Attribute | Verified against a live instance |
+| EnergyZero (built in) | Action | Built from the action's source, not yet seen live |
+| easyEnergy (built in) | Action | Built from the action's source, not yet seen live |
+| Nord Pool (HACS) | Attribute | Written from its documented shape, untested |
+| Anything else | Attribute | Use **Other** and name the attribute and keys yourself |
+
+For an action source, pick which configuration of that integration to ask; it is
+called at most once every fifteen minutes, because day-ahead prices change twice a
+day. Install that integration first — the setup refuses with an explanation rather
+than showing you an empty picker.
+
+Note that the built-in Nord Pool integration is *not* the one listed above. It keeps
+its prices behind an action whose response is keyed by bidding area, which does not
+fit this shape yet; the preset is for the older HACS integration that publishes
+`raw_today`.
 
 If your source is not listed, pick **Other**. You will be asked for the name of the
 attribute holding the price list, and the keys inside each entry. Look them up under
 *Developer tools → States*, select your price sensor, and read its attributes. If you
 get it working for a source not listed here, an issue with the three names is enough
 for it to become a preset.
+
+### Taxes and surcharges
+
+Market prices are not what you pay. Two settings turn one into the other:
+
+    what you pay = (market price + surcharge) × (1 + VAT / 100)
+
+**Surcharge per kWh** covers energy tax and your supplier's margin; **VAT** is a
+percentage. Both default to zero, so a source that already quotes all-in prices needs
+neither touched. Neither can change *which* periods are cheapest — the transform is
+monotonic, so the plan is identical either way. They only make the euros on the card
+match the bill.
+
+### If your price source goes quiet
+
+It happens. The ENTSO-e Transparency Platform went down three times in one month
+during development. When a source stops answering, the planner keeps the prices and
+the schedule it already had rather than erasing them, and **Laad nu** charges
+regardless of price. If one source is unreliable where you live, switching to another
+is a matter of reopening the setup.
 
 ## Installing
 

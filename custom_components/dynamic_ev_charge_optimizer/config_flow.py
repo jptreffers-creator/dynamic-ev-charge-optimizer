@@ -30,12 +30,17 @@ from .const import (
     CONF_PRICE_ENTITY,
     CONF_PRICE_PRESET,
     CONF_PRICE_TIME_KEY,
+    CONF_PRICE_SOURCE_ENTRY,
+    CONF_PRICE_SURCHARGE,
     CONF_PRICE_VALUE_KEY,
+    CONF_PRICE_VAT,
     CONF_SESSION_ENERGY_SENSOR,
     CONF_TARGET_SOC,
     DEFAULT_BATTERY_CAPACITY,
     DEFAULT_CHARGE_POWER,
     DEFAULT_DEADLINE_TIME,
+    DEFAULT_PRICE_SURCHARGE,
+    DEFAULT_PRICE_VAT,
     DEFAULT_STALE_HOURS,
     DEFAULT_TARGET_SOC,
     DOMAIN,
@@ -80,11 +85,40 @@ def price_schema(current: dict[str, Any]) -> vol.Schema:
                 CONF_PRICE_PRESET,
                 default=current.get(CONF_PRICE_PRESET, price_adapters.PRESET_ENTSOE),
             ): _options(labels),
+        }
+    )
+
+
+def price_entity_schema(current: dict[str, Any]) -> vol.Schema:
+    """For sources that publish the whole list as a sensor attribute."""
+    return vol.Schema(
+        {
             vol.Required(
                 CONF_PRICE_ENTITY, default=current.get(CONF_PRICE_ENTITY, vol.UNDEFINED)
             ): _entity("sensor"),
         }
     )
+
+
+def price_source_schema(domain: str, current: dict[str, Any]) -> vol.Schema:
+    """For sources that answer an action: which of their config entries to ask."""
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_PRICE_SOURCE_ENTRY,
+                default=current.get(CONF_PRICE_SOURCE_ENTRY, vol.UNDEFINED),
+            ): selector.ConfigEntrySelector({"integration": domain}),
+        }
+    )
+
+
+def next_price_step(preset: str) -> str:
+    """Which question this source needs answered after the preset is chosen."""
+    if preset == price_adapters.PRESET_GENERIC:
+        return "price_keys"
+    if price_adapters.PRESETS[preset].is_action:
+        return "price_source"
+    return "price_entity"
 
 
 def generic_price_schema(current: dict[str, Any]) -> vol.Schema:
@@ -187,6 +221,14 @@ def defaults_schema(current: dict[str, Any]) -> vol.Schema:
                 CONF_DEADLINE_TIME,
                 default=current.get(CONF_DEADLINE_TIME, DEFAULT_DEADLINE_TIME),
             ): selector.TimeSelector(),
+            vol.Required(
+                CONF_PRICE_SURCHARGE,
+                default=current.get(CONF_PRICE_SURCHARGE, DEFAULT_PRICE_SURCHARGE),
+            ): _number(0.0, 2.0, 0.001, "/kWh"),
+            vol.Required(
+                CONF_PRICE_VAT,
+                default=current.get(CONF_PRICE_VAT, DEFAULT_PRICE_VAT),
+            ): _number(0.0, 50.0, 0.5, "%"),
         }
     )
 
@@ -202,17 +244,48 @@ class DynamicEvChargeOptimizerConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
             self._data.update(user_input)
-            if user_input[CONF_PRICE_PRESET] == price_adapters.PRESET_GENERIC:
-                return await self.async_step_price_keys()
-            return await self.async_step_charger()
+            return await self._async_price_step(user_input[CONF_PRICE_PRESET])
         return self.async_show_form(step_id="user", data_schema=price_schema({}))
+
+    async def _async_price_step(self, preset: str) -> ConfigFlowResult:
+        step = next_price_step(preset)
+        if step == "price_keys":
+            return await self.async_step_price_keys()
+        if step == "price_source":
+            return await self.async_step_price_source()
+        return await self.async_step_price_entity()
 
     async def async_step_price_keys(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
             self._data.update(user_input)
-            return await self.async_step_charger()
+            return await self.async_step_price_entity()
         return self.async_show_form(
             step_id="price_keys", data_schema=generic_price_schema({})
+        )
+
+    async def async_step_price_entity(self, user_input=None) -> ConfigFlowResult:
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_charger()
+        return self.async_show_form(
+            step_id="price_entity", data_schema=price_entity_schema({})
+        )
+
+    async def async_step_price_source(self, user_input=None) -> ConfigFlowResult:
+        spec = price_adapters.PRESETS[self._data[CONF_PRICE_PRESET]].action
+        assert spec is not None
+        # An empty picker with no explanation is the worst possible failure here,
+        # so say plainly that the other integration has to exist first.
+        if not self.hass.config_entries.async_entries(spec.domain):
+            return self.async_abort(
+                reason="source_not_installed",
+                description_placeholders={"integration": spec.domain},
+            )
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_charger()
+        return self.async_show_form(
+            step_id="price_source", data_schema=price_source_schema(spec.domain, {})
         )
 
     async def async_step_charger(self, user_input=None) -> ConfigFlowResult:
@@ -265,9 +338,12 @@ class DynamicEvChargeOptimizerOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
             self._data.update(user_input)
-            if user_input[CONF_PRICE_PRESET] == price_adapters.PRESET_GENERIC:
+            step = next_price_step(user_input[CONF_PRICE_PRESET])
+            if step == "price_keys":
                 return await self.async_step_price_keys()
-            return await self.async_step_charger()
+            if step == "price_source":
+                return await self.async_step_price_source()
+            return await self.async_step_price_entity()
         return self.async_show_form(
             step_id="init", data_schema=price_schema(self._current)
         )
@@ -275,9 +351,33 @@ class DynamicEvChargeOptimizerOptionsFlow(OptionsFlow):
     async def async_step_price_keys(self, user_input=None) -> ConfigFlowResult:
         if user_input is not None:
             self._data.update(user_input)
-            return await self.async_step_charger()
+            return await self.async_step_price_entity()
         return self.async_show_form(
             step_id="price_keys", data_schema=generic_price_schema(self._current)
+        )
+
+    async def async_step_price_entity(self, user_input=None) -> ConfigFlowResult:
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_charger()
+        return self.async_show_form(
+            step_id="price_entity", data_schema=price_entity_schema(self._current)
+        )
+
+    async def async_step_price_source(self, user_input=None) -> ConfigFlowResult:
+        spec = price_adapters.PRESETS[self._current[CONF_PRICE_PRESET]].action
+        assert spec is not None
+        if not self.hass.config_entries.async_entries(spec.domain):
+            return self.async_abort(
+                reason="source_not_installed",
+                description_placeholders={"integration": spec.domain},
+            )
+        if user_input is not None:
+            self._data.update(user_input)
+            return await self.async_step_charger()
+        return self.async_show_form(
+            step_id="price_source",
+            data_schema=price_source_schema(spec.domain, self._current),
         )
 
     async def async_step_charger(self, user_input=None) -> ConfigFlowResult:

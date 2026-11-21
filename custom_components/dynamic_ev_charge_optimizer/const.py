@@ -19,6 +19,11 @@ CONF_PRICE_ENTITY: Final = "price_entity"
 CONF_PRICE_ATTRIBUTE: Final = "price_attribute"
 CONF_PRICE_TIME_KEY: Final = "price_time_key"
 CONF_PRICE_VALUE_KEY: Final = "price_value_key"
+#: Config entry of the integration whose action is called, for sources
+#: that answer an action instead of publishing an attribute.
+CONF_PRICE_SOURCE_ENTRY: Final = "price_source_entry"
+CONF_PRICE_SURCHARGE: Final = "price_surcharge_per_kwh"
+CONF_PRICE_VAT: Final = "price_vat_percent"
 
 CONF_CHARGER_SWITCH: Final = "charger_switch"
 CONF_CHARGER_POWER_SENSOR: Final = "charger_power_sensor"
@@ -42,6 +47,14 @@ DEFAULT_CHARGE_POWER: Final = 11.0
 DEFAULT_TARGET_SOC: Final = 80.0
 DEFAULT_DEADLINE_TIME: Final = "07:00:00"
 DEFAULT_STALE_HOURS: Final = 2.0
+# Both zero, so a source quoting all-in prices needs no thought at all.
+DEFAULT_PRICE_SURCHARGE: Final = 0.0
+DEFAULT_PRICE_VAT: Final = 0.0
+
+# The plan is recomputed every minute, but an action-based source is only
+# asked this often. Day-ahead prices change twice a day; calling another
+# integration's action sixty times an hour would be rude and pointless.
+PRICE_ACTION_INTERVAL_MINUTES: Final = 15
 
 # Refusing to poll the car more often than this is enforced in Python rather than
 # trusted to the frontend. Some cars keep their modem awake to answer, which drains

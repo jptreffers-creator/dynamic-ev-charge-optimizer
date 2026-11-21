@@ -35,11 +35,17 @@ from .const import (
     CONF_CHARGER_SWITCH,
     CONF_DEADLINE_TIME,
     CONF_PRICE_ENTITY,
+    CONF_PRICE_SOURCE_ENTRY,
+    CONF_PRICE_SURCHARGE,
+    CONF_PRICE_VAT,
     CONF_SESSION_ENERGY_SENSOR,
     CONF_TARGET_SOC,
     DEFAULT_BATTERY_CAPACITY,
     DEFAULT_CHARGE_POWER,
     DEFAULT_DEADLINE_TIME,
+    DEFAULT_PRICE_SURCHARGE,
+    DEFAULT_PRICE_VAT,
+    PRICE_ACTION_INTERVAL_MINUTES,
     DEFAULT_STALE_HOURS,
     DEFAULT_TARGET_SOC,
     DOMAIN,
@@ -92,6 +98,9 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
         self._session_kwh: float = 0.0
         self._last_sample: datetime | None = None
         self._charger_was_on: bool = False
+        #: Last answer from an action-based price source, and when it came.
+        self._price_action_slots: list = []
+        self._price_action_at: datetime | None = None
         #: Charge now regardless of price. Persisted, because a restart that
         #: silently stopped an override would look like the charger failing.
         self.charge_now_override: bool = False
@@ -110,7 +119,15 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
             "energy_override": 0.0,
             "deadline": None,
         }
-        for key in (CONF_CHARGE_POWER, CONF_BATTERY_CAPACITY, CONF_TARGET_SOC):
+        self.settings[CONF_PRICE_SURCHARGE] = DEFAULT_PRICE_SURCHARGE
+        self.settings[CONF_PRICE_VAT] = DEFAULT_PRICE_VAT
+        for key in (
+            CONF_CHARGE_POWER,
+            CONF_BATTERY_CAPACITY,
+            CONF_TARGET_SOC,
+            CONF_PRICE_SURCHARGE,
+            CONF_PRICE_VAT,
+        ):
             if key in options:
                 self.settings[key] = float(options[key])
         self.settings.update(stored.get("settings") or {})
@@ -146,20 +163,85 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
         entity_id = self.entry.options.get(key)
         return self.hass.states.get(entity_id) if entity_id else None
 
-    def _read_slots(self) -> list:
-        entity = self._state(CONF_PRICE_ENTITY)
-        if entity is None:
-            self.price_error = "price sensor not found"
-            return []
+    async def _async_read_slots(self) -> list:
+        """Fetch prices from whichever kind of source is configured.
+
+        Failure returns the slots we already had rather than an empty list. A price
+        source that goes quiet for a day -- which ENTSO-e does regularly -- should
+        not silently erase a schedule that is still perfectly good.
+        """
         shape = price_adapters.shape_from_config(dict(self.entry.options))
         try:
-            slots = price_adapters.slots_from_attribute(
-                entity.attributes.get(shape.attribute), shape
-            )
+            if shape.is_action:
+                slots = await self._async_slots_from_action(shape)
+            else:
+                slots = self._slots_from_attribute(shape)
         except price_adapters.PriceReadError as err:
             self.price_error = str(err)
-            return []
+            return self.slots
         self.price_error = None
+        return price_adapters.adjust(
+            slots,
+            surcharge=float(self.settings.get(CONF_PRICE_SURCHARGE, 0.0) or 0.0),
+            vat_percent=float(self.settings.get(CONF_PRICE_VAT, 0.0) or 0.0),
+        )
+
+    def _slots_from_attribute(self, shape) -> list:
+        entity = self._state(CONF_PRICE_ENTITY)
+        if entity is None:
+            raise price_adapters.PriceReadError("price sensor not found")
+        return price_adapters.slots_from_attribute(
+            entity.attributes.get(shape.attribute), shape
+        )
+
+    async def _async_slots_from_action(self, shape) -> list:
+        """Ask the source integration for its price list.
+
+        Throttled: the plan is recomputed every minute, but day-ahead prices change
+        twice a day, and hammering another integration's action sixty times an hour
+        would be both rude and pointless. Between calls the last answer is reused.
+        """
+        spec = shape.action
+        entry_id = self.entry.options.get(CONF_PRICE_SOURCE_ENTRY)
+        if not entry_id:
+            raise price_adapters.PriceReadError(
+                "no price source selected; open the integration's settings"
+            )
+
+        now = dt_util.utcnow()
+        if (
+            self._price_action_slots
+            and self._price_action_at
+            and now - self._price_action_at
+            < timedelta(minutes=PRICE_ACTION_INTERVAL_MINUTES)
+        ):
+            return self._price_action_slots
+
+        today = dt_util.now().date()
+        data = {spec.entry_param: entry_id, **spec.data}
+        if spec.start_param:
+            data[spec.start_param] = today.isoformat()
+        if spec.end_param:
+            # Tomorrow, so the horizon covers the whole 48 hours the planner works
+            # with. Before the afternoon publication the source simply returns less.
+            data[spec.end_param] = (today + timedelta(days=1)).isoformat()
+
+        try:
+            response = await self.hass.services.async_call(
+                spec.domain,
+                spec.service,
+                data,
+                blocking=True,
+                return_response=True,
+            )
+        except Exception as err:  # noqa: BLE001 - any failure is a read failure here
+            raise price_adapters.PriceReadError(
+                f"{spec.domain}.{spec.service} failed: {err}"
+            ) from err
+
+        slots = price_adapters.slots_from_response(response, shape)
+        self._price_action_slots = slots
+        self._price_action_at = now
         return slots
 
     @property
@@ -216,7 +298,7 @@ class DynamicEvChargeOptimizerCoordinator(DataUpdateCoordinator[Plan]):
 
     async def _async_update_data(self) -> Plan:
         now = dt_util.now()
-        slots = self._read_slots()
+        slots = await self._async_read_slots()
         self.slots = slots
 
         plan = build_plan(
